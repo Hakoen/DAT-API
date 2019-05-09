@@ -1,18 +1,72 @@
-import {Entity, PrimaryGeneratedColumn, Column} from "typeorm";
+import {Entity, PrimaryGeneratedColumn, Column, ManyToMany, ManyToOne, JoinTable, OneToMany} from "typeorm";
 
 @Entity()
-export class Customer {
+
+export class User {
 
     @PrimaryGeneratedColumn()
     id: number;
 
-    @Column()
-    firstName: string;
+    @ManyToMany(type => Tag, tag => tag.users)
+    @JoinTable()
+    tags: Tag[];
+    
+}
+
+export class Product
+{
+    @PrimaryGeneratedColumn()
+    id: number;
 
     @Column()
-    lastName: string;
+    name: string;
 
     @Column()
-    age: number;
+    description: string;
 
+    @Column()
+    price: number;
+
+
+
+    @ManyToOne(type => ProductCategory, productcategory => productcategory.products)
+    ProductCategory: ProductCategory;
+
+   
+
+}
+
+export class Tag
+{
+    @PrimaryGeneratedColumn()
+    id: number
+
+    @Column()
+    name: string;
+
+    @Column()
+    color: string;
+
+    @ManyToMany(type => User, user => user.tags)
+    @JoinTable()
+    users: User[];
+
+}
+
+export class ProductCategory
+{
+    @PrimaryGeneratedColumn()
+    id: number;
+
+    @Column()
+    name: string;
+
+    @Column()
+    description: string;
+
+    @Column()
+    iconUrl: string;
+
+    @OneToMany(type => Product, product => product.ProductCategory)
+    products: Product[];
 }
