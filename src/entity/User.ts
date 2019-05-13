@@ -1,72 +1,74 @@
-import {Entity, PrimaryGeneratedColumn, Column, ManyToMany, ManyToOne, JoinTable, OneToMany} from "typeorm";
+import {
+	Entity,
+	PrimaryGeneratedColumn,
+	Column,
+	ManyToMany,
+	ManyToOne,
+	JoinTable,
+	OneToMany
+} from "typeorm";
 
 @Entity()
-
 export class User {
+	@PrimaryGeneratedColumn()
+	id: number;
 
-    @PrimaryGeneratedColumn()
-    id: number;
-
-    @ManyToMany(type => Tag, tag => tag.users)
-    @JoinTable()
-    tags: Tag[];
-    
+	@ManyToMany(type => Tag, tag => tag.users)
+	@JoinTable()
+	tags: Tag[];
 }
 
-export class Product
-{
-    @PrimaryGeneratedColumn()
-    id: number;
+@Entity()
+export class Product {
+	@PrimaryGeneratedColumn()
+	id: number;
 
-    @Column()
-    name: string;
+	@Column()
+	name: string;
 
-    @Column()
-    description: string;
+	@Column()
+	description: string;
 
-    @Column()
-    price: number;
+	@Column()
+	price: number;
 
-
-
-    @ManyToOne(type => ProductCategory, productcategory => productcategory.products)
-    ProductCategory: ProductCategory;
-
-   
-
+	@ManyToOne(
+		type => ProductCategory,
+		productcategory => productcategory.products
+	)
+	ProductCategory: ProductCategory;
 }
 
-export class Tag
-{
-    @PrimaryGeneratedColumn()
-    id: number
+@Entity()
+export class Tag {
+	@PrimaryGeneratedColumn()
+	id: number;
 
-    @Column()
-    name: string;
+	@Column()
+	name: string;
 
-    @Column()
-    color: string;
+	@Column()
+	color: string;
 
-    @ManyToMany(type => User, user => user.tags)
-    @JoinTable()
-    users: User[];
-
+	@ManyToMany(type => User, user => user.tags)
+	@JoinTable()
+	users: User[];
 }
 
-export class ProductCategory
-{
-    @PrimaryGeneratedColumn()
-    id: number;
+@Entity()
+export class ProductCategory {
+	@PrimaryGeneratedColumn()
+	id: number;
 
-    @Column()
-    name: string;
+	@Column()
+	name: string;
 
-    @Column()
-    description: string;
+	@Column()
+	description: string;
 
-    @Column()
-    iconUrl: string;
+	@Column()
+	iconUrl: string;
 
-    @OneToMany(type => Product, product => product.ProductCategory)
-    products: Product[];
+	@OneToMany(type => Product, product => product.ProductCategory)
+	products: Product[];
 }
