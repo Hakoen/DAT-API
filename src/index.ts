@@ -1,6 +1,7 @@
 import "reflect-metadata";
 import { createConnection } from "typeorm";
 import express, { Request, Response } from "express";
+import { getProducts} from "./services" 
 // import { User, Tag } from "./entity/User";
 
 const app = express();
@@ -20,3 +21,11 @@ app.listen(port, () => {
 app.get("/user", (req: Request, res: Response) => {
 	res.send("Working");
 });
+
+app.get("/products",
+    async(req: Request, res: Response) => {
+        res.send(await getProducts())
+    });
+
+
+
