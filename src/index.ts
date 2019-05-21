@@ -1,10 +1,14 @@
 import "reflect-metadata";
 import { createConnection } from "typeorm";
 import express, { Request, Response } from "express";
-// import { User, Tag } from "./entity/User";
+import bodyParser from 'body-parser'
+import { User, Tag } from "./Entities";
+import { isOrder } from './validation/order'
 
 const app = express();
 const port = 8080;
+
+app.use(bodyParser.json())
 
 createConnection()
 	.then(async connection => {
@@ -20,3 +24,10 @@ app.listen(port, () => {
 app.get("/user", (req: Request, res: Response) => {
 	res.send("Working");
 });
+
+app.post('/place_order', (req: Request, res: Response) => {
+	console.log('Ordert:', req.body)
+
+	res.send(isOrder(req.body))
+})
+
