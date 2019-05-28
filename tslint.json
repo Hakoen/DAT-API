@@ -1,0 +1,6 @@
+{
+  "rules": {
+    "no-unreachable": true,
+    "indent": [true, "tabs"]
+  }
+}
