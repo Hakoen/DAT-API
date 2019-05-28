@@ -1,32 +1,73 @@
 import "reflect-metadata";
-import { createConnection } from "typeorm";
+import {
+	createConnection,
+	getConnection,
+	Connection,
+	getManager,
+	getCustomRepository
+} from "typeorm";
 import express, { Request, Response } from "express";
-import { Product } from "./Entities";
-// import { User, Tag } from "./entity/User";
+import bodyParser from "body-parser";
+import { User, Tag } from "./Entities";
+import { isOrder } from "./validation/order";
+import { getProducts } from "./services";
 
 const app = express();
 const port = 8080;
 
 createConnection()
-	.then(async connection => {
-		await connection.synchronize();
+	.then(connection => {
+		const usersRepo = connection.getRepository(User);
+		const tagRepo = connection.getRepository(Tag);
+
+		app.use(bodyParser.json());
+		//app.use(cors())
+
 		app.listen(port, () => {
 			// tslint:disable-next-line:no-console
 			console.log(`server is running on: http://localhost:${port}`);
 		});
 
-		app.get("/user", async (req: Request, res: Response) => {
-			let firstUser: Product = null;
-			try {
-				firstUser = await connection
-					.getRepository(Product)
-					.createQueryBuilder("product")
-					.where("product.id = :id", { id: 2 })
-					.getOne();
-			} catch (error) {
-				console.log(error);
-			}
-			res.send(firstUser);
+		app.post("/place_order", (req: Request, res: Response) => {
+			res.send(isOrder(req.body));
+		});
+
+		app.post("/tag", (req: Request, res: Response) => {
+			const newTag = tagRepo.create({
+				name: req.body.name,
+				color: req.body.color
+			});
+
+			tagRepo
+				.save(newTag)
+				.then(() => {
+					res.sendStatus(201);
+				})
+				.catch(err => {
+					console.log(err);
+					res.sendStatus(501);
+				});
+		});
+
+		app.delete("/tag", (req: Request, res: Response) => {
+			tagRepo
+				.findOne({ name: req.body.name })
+				.then(deleteTag => {
+					tagRepo.delete(deleteTag);
+				})
+				.then(() => {
+					res.sendStatus(200);
+				})
+				.catch(err => {
+					console.log(err);
+					res.sendStatus(500);
+				});
+		});
+
+		app.get("/products", async (req: Request, res: Response) => {
+			res.send(await getProducts());
 		});
 	})
-	.catch(error => console.log(error));
+	.catch(err => {
+		console.log("ERROR: ", err);
+	});
