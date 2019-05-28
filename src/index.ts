@@ -8,7 +8,7 @@ import {
 } from "typeorm";
 import express, { Request, Response } from "express";
 import bodyParser from "body-parser";
-import { User, Tag } from "./Entities";
+import { User, Tag, Product } from "./Entities";
 import { isOrder } from "./validation/order";
 import { getProducts } from "./services";
 
@@ -65,7 +65,11 @@ createConnection()
 		});
 
 		app.get("/products", async (req: Request, res: Response) => {
-			res.send(await getProducts());
+			const products = await connection
+				.getRepository(Product)
+				.createQueryBuilder("products")
+				.getMany();
+			res.send(products);
 		});
 	})
 	.catch(err => {
