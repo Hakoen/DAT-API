@@ -1,5 +1,5 @@
 import "reflect-metadata";
-import { createConnection } from "typeorm";
+import { createConnection, getConnection, Connection, getManager, getCustomRepository } from "typeorm";
 import express, { Request, Response } from "express";
 import bodyParser from 'body-parser'
 import { User, Tag } from "./Entities";
@@ -9,32 +9,60 @@ import { getProducts} from "./services"
 const app = express();
 const port = 8080;
 
-app.use(bodyParser.json())
 
-createConnection()
-	.then(async connection => {
-		await connection.synchronize();
+
+createConnection().then(connection => {
+
+	const usersRepo = connection.getRepository(User)
+	const tagRepo = connection.getRepository(Tag)
+
+	app.use(bodyParser.json())
+	//app.use(cors())
+
+	app.listen(port, () => {
+		// tslint:disable-next-line:no-console
+		console.log(`server is running on: http://localhost:${port}`);
+	});
+
+	app.post('/place_order', (req: Request, res: Response) => {
+		res.send(isOrder(req.body))
 	})
-	.catch(error => console.log(error));
 
-app.listen(port, () => {
-	// tslint:disable-next-line:no-console
-	console.log(`server is running on: http://localhost:${port}`);
-});
+	app.post('/tag', (req: Request, res: Response) => {
+		const newTag = tagRepo.create({name: req.body.name, color: req.body.color})
 
-app.get("/user", (req: Request, res: Response) => {
-	res.send("Working");
-});
+		tagRepo.save(newTag).then(() => {
+			res.sendStatus(201)
+		}).catch(err => {
+			console.log(err)
+			res.sendStatus(501)
+		})
 
-app.post('/place_order', (req: Request, res: Response) => {
-	console.log('Ordert:', req.body)
+	})
 
-	res.send(isOrder(req.body))
+	app.delete('/tag', (req: Request, res: Response) => {
+		tagRepo.findOne({name: req.body.name}).then(deleteTag => {
+			tagRepo.delete(deleteTag)
+		}).then(() => {
+			res.sendStatus(200)
+		}).catch(err => {
+			console.log(err)
+			res.sendStatus(500)
+		})
+	})
+	
+	app.get("/products",
+		async(req: Request, res: Response) => {
+			res.send(await getProducts())
+		});
+
+}).catch(err => {
+	console.log('ERROR: ', err)
 })
-app.get("/products",
-    async(req: Request, res: Response) => {
-        res.send(await getProducts())
-    });
+
+
+
+
 
 
 
