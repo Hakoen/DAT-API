@@ -1,30 +1,31 @@
+import bodyParser from "body-parser";
+import express, { Request, Response } from "express";
 import "reflect-metadata";
 import {
+	Connection,
 	createConnection,
 	getConnection,
-	Connection,
+	getCustomRepository,
 	getManager,
-	getCustomRepository
 } from "typeorm";
-import express, { Request, Response } from "express";
-import bodyParser from "body-parser";
-import { User, Tag, Product } from "./Entities";
-import { isOrder } from "./validation/order";
+import { ProductCm, UserCm } from "./client_models";
+import { ClientModel } from "./client_models/clientModel";
+import { Product, Tag, User } from "./Entities";
 import { getProducts } from "./services";
+import { isOrder } from "./validation/order";
 
 const app = express();
 const port = 8080;
 
 createConnection()
-	.then(connection => {
+	.then((connection) => {
 		const usersRepo = connection.getRepository(User);
 		const tagRepo = connection.getRepository(Tag);
 
 		app.use(bodyParser.json());
-		//app.use(cors())
+		// app.use(cors())
 
 		app.listen(port, () => {
-			// tslint:disable-next-line:no-console
 			console.log(`server is running on: http://localhost:${port}`);
 		});
 
@@ -35,7 +36,7 @@ createConnection()
 		app.post("/tag", (req: Request, res: Response) => {
 			const newTag = tagRepo.create({
 				name: req.body.name,
-				color: req.body.color
+				color: req.body.color,
 			});
 
 			tagRepo
@@ -43,7 +44,7 @@ createConnection()
 				.then(() => {
 					res.sendStatus(201);
 				})
-				.catch(err => {
+				.catch((err) => {
 					console.log(err);
 					res.sendStatus(501);
 				});
@@ -52,13 +53,13 @@ createConnection()
 		app.delete("/tag", (req: Request, res: Response) => {
 			tagRepo
 				.findOne({ name: req.body.name })
-				.then(deleteTag => {
+				.then((deleteTag) => {
 					tagRepo.delete(deleteTag);
 				})
 				.then(() => {
 					res.sendStatus(200);
 				})
-				.catch(err => {
+				.catch((err) => {
 					console.log(err);
 					res.sendStatus(500);
 				});
@@ -69,9 +70,9 @@ createConnection()
 				.getRepository(Product)
 				.createQueryBuilder("products")
 				.getMany();
-			res.send(products);
+			res.send(products.map(ProductCm.fromDbModel));
 		});
 	})
-	.catch(err => {
+	.catch((err) => {
 		console.log("ERROR: ", err);
 	});

@@ -1,74 +1,96 @@
 import {
-	Entity,
-	PrimaryGeneratedColumn,
 	Column,
+	Entity,
+	JoinTable,
 	ManyToMany,
 	ManyToOne,
-	JoinTable,
-	OneToMany
+	OneToMany,
+	PrimaryGeneratedColumn
 } from "typeorm";
+import { UserCm } from "./client_models/userCm";
+import { DatabaseModel } from "./models/databaseModel";
+
+// TODO:
+//  1. Move models to ./models folder, 1 class per file.
+//  2. Add DatabaseModel<...> to all entities (and include methods)
+//  3. Add all client models based on diagram in technical report.
 
 @Entity()
 export class User {
 	@PrimaryGeneratedColumn()
-	id: number;
+	public id: number;
 
-	@ManyToMany(type => Tag, tag => tag.users)
+	// FIXME: See Tag.users
+	@ManyToMany(() => Tag, tag => tag.users)
 	@JoinTable()
-	tags: Tag[];
+	public tags: Tag[];
+
+	// FIXME: Consider using map<tagname, number_of_times_ordered> instead of list of tags:
+	// tags: { [key: string]: number }; // Use immutable.Map if possible.
+
+	//  Example: {'vegan', 20, 'milkshake': 2}
 }
 
 @Entity()
 export class Product {
+	// TODO: Add DatabaseModel<ProductCm>
 	@PrimaryGeneratedColumn()
-	id: number;
+	public id: number;
 
 	@Column()
-	name: string;
+	public name: string;
 
 	@Column()
-	description: string;
+	public description: string;
 
 	@Column()
-	price: number;
+	public price: number;
 
 	@ManyToOne(
-		type => ProductCategory,
-		productcategory => productcategory.products
+		() => ProductCategory,
+		(productcategory) => productcategory.products
 	)
-	ProductCategory: ProductCategory;
+	public ProductCategory: ProductCategory;
 }
 
 @Entity()
 export class Tag {
+	// TODO: Add DatabaseModel<TagCm>
 	@PrimaryGeneratedColumn()
-	id: number;
+	public id: number;
 
 	@Column()
-	name: string;
+	public name: string;
 
 	@Column()
-	color: string;
+	public color: string;
 
+	// FIXME: Do we need to know what users are associated with a single tag? If not, remove this and change to 1-many relation.
 	@ManyToMany(type => User, user => user.tags)
 	@JoinTable()
-	users: User[];
+	public users: User[];
+
+	public toString = (): string => this.name;
+
+	// FIXME: Implement fromString method to go from tag-name to Tag instance from DB.
+	//  public fromString = (name: string): Tag => ...;
 }
 
 @Entity()
 export class ProductCategory {
+	// TODO: Add DatabaseModel<ProductCategory>
 	@PrimaryGeneratedColumn()
-	id: number;
+	public id: number;
 
 	@Column()
-	name: string;
+	public name: string;
 
 	@Column()
-	description: string;
+	public description: string;
 
 	@Column()
-	iconUrl: string;
+	public iconUrl: string;
 
 	@OneToMany(type => Product, product => product.ProductCategory)
-	products: Product[];
+	public products: Product[];
 }

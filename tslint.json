@@ -1,6 +1,15 @@
 {
-  "rules": {
-    "no-unreachable": true,
-    "indent": [true, "tabs"]
-  }
+	"linterOptions": {
+		"exclude": ["bin", "build", "config", "coverage", "node_modules", "**/*.d.ts"]
+	},
+	"extends": ["tslint:recommended"],
+	"rules": {
+		"no-unreachable": true,
+		"indent": [true, "tabs"],
+		"semicolon": false,
+		"object-literal-sort-keys": false,
+		"no-console": false,
+		"interface-name": false,
+		"class-name": false
+	}
 }

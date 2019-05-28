@@ -18,6 +18,7 @@
     "express": "^4.16.4",
     "pg": "^7.3.0",
     "reflect-metadata": "^0.1.10",
+    "tslint": "^5.16.0",
     "typeorm": "0.2.17",
     "typescript": "^3.4.5"
   },
