@@ -1,19 +1,19 @@
-import { getRandomArbitrary } from './helpers'
-import fs from 'fs'
 import csv from 'csv-parser'
-import { Repository } from 'typeorm'
-import { ProductCategory, Product } from './entities'
+import fs from 'fs'
 import { stringify } from 'querystring'
+import { Repository } from 'typeorm'
+import { Product, ProductCategory } from './entities'
+import { getRandomArbitrary } from './helpers'
 
 class McDonaldsImporter {
-  file: string
-  rows: Row[] = []
+  public file: string
+  public rows: Row[] = []
 
   constructor(file: string) {
     this.file = file
   }
 
-  async import(
+  public async import(
     categories: Repository<ProductCategory>,
     products: Repository<Product>
   ) {
@@ -37,7 +37,7 @@ class McDonaldsImporter {
               'CATEGORY'
             ],
             mapHeaders: ({ header, index }) => {
-              if (header == 'ITEM' || header == 'CATEGORY') {
+              if (header === 'ITEM' || header === 'CATEGORY') {
                 return header.toLowerCase()
               } else {
                 return null
@@ -52,40 +52,36 @@ class McDonaldsImporter {
         .on('end', () => {
           // TODO: fix category check, to prevent category duplicates
           this.rows.map(async (row: Row) => {
-            try {
-              let category = await categories.findOne({
-                where: {
-                  name: this.mapCategory(row.category)
-                }
-              })
-              if (category == undefined) {
-                category = categories.create({
-                  name: this.mapCategory(row.category),
-                  iconUrl: this.mapCategoryIcon(row.category)
-                })
-                await categories.save(category)
+            let category: ProductCategory = await categories.findOne({
+              where: {
+                name: this.mapCategory(row.category)
               }
-              return
-              const product = await products.findOne({
-                where: { name: row.item }
+            })
+            if (!category) {
+              category = categories.create({
+                name: this.mapCategory(row.category),
+                iconUrl: this.mapCategoryIcon(row.category)
               })
-              if (!product) {
-                const newProduct = products.create({
-                  name: row.item,
-                  price: parseFloat(
-                    this.getProductPrice(category.name).toString()
-                  ),
-                  ProductCategory: category
-                })
-                await products.save(newProduct)
-                imported += 1
-              }
-            } catch (error) {
-              console.log(error)
+              await categories.save(category)
+            }
+            return // FIXME: Temporary
+            const product = await products.findOne({
+              where: { name: row.item }
+            })
+            if (!product) {
+              const newProduct = products.create({
+                name: row.item,
+                price: parseFloat(
+                  this.getProductPrice(category.name).toString()
+                ),
+                ProductCategory: category
+              })
+              await products.save(newProduct)
+              imported += 1 // FIXME: What's this doing here?
             }
           })
         })
-        .on('error', error => {
+        .on('error', (error) => {
           rej(error)
         })
     })
@@ -132,42 +128,68 @@ class McDonaldsImporter {
   }
 
   private mapCategoryIcon(categoryName: string) {
+    const urlPrefixes = {
+      mcDonalds:
+        'https://www.mcdonalds.com/is/image/content/dam/usa/nfl/assets/nav/',
+      topSecretRecipies: 'https://bigoven-res.cloudinary.com/image/upload/'
+    }
+
     switch (categoryName.toUpperCase()) {
       case 'BURGER':
-        return 'https://www.mcdonalds.com/is/image/content/dam/usa/nfl/assets/nav/nav_burgers_80x80.jpg?$Category_Mobile$'
+        return `${urlPrefixes.mcDonalds}nav_burgers_80x80.jpg?$Category_Mobile$`
       case 'CHICKEN':
-        return 'https://www.mcdonalds.com/is/image/content/dam/usa/nfl/assets/nav/nav_chicken_&_sandwiches_80x80.jpg?$Category_Mobile$'
+        return `${
+          urlPrefixes.mcDonalds
+        }nav_chicken_&_sandwiches_80x80.jpg?$Category_Mobile$`
       case 'BREAKFAST':
-        return 'https://www.mcdonalds.com/is/image/content/dam/usa/nfl/assets/nav/nav_breakfast_80x80.png?$Category_Mobile$'
+        return `${
+          urlPrefixes.mcDonalds
+        }nav_breakfast_80x80.png?$Category_Mobile$`
       case 'SALAD':
-        return 'https://www.mcdonalds.com/is/image/content/dam/usa/nfl/assets/nav/nav_salads_80x80.jpg?$Category_Mobile$'
+        return `${urlPrefixes.mcDonalds}nav_salads_80x80.jpg?$Category_Mobile$`
       case 'SNACKSIDE':
-        return 'https://www.mcdonalds.com/is/image/content/dam/usa/nfl/assets/nav/nav_snacks_&_sides_80x80.jpg?$Category_Mobile$'
+        return `${
+          urlPrefixes.mcDonalds
+        }nav_snacks_&_sides_80x80.jpg?$Category_Mobile$`
       case 'BEVERAGE':
       default:
-        return 'https://www.mcdonalds.com/is/image/content/dam/usa/nfl/assets/nav/nav_drinks_80x80.jpg?$Category_Mobile$'
+        return `${urlPrefixes.mcDonalds}nav_drinks_80x80.jpg?$Category_Mobile$`
       case 'MCCAFE':
-        return 'https://www.mcdonalds.com/is/image/content/dam/usa/nfl/assets/nav/nav_mccafe_80x80.jpg?$Category_Mobile$'
+        return `${urlPrefixes.mcDonalds}nav_mccafe_80x80.jpg?$Category_Mobile$`
       case 'DESSERT':
-        return 'https://www.mcdonalds.com/is/image/content/dam/usa/nfl/assets/nav/nav_desserts_&_shakes_80x80.jpg?$Category_Mobile$'
+        return `${
+          urlPrefixes.mcDonalds
+        }nav_desserts_&_shakes_80x80.jpg?$Category_Mobile$`
       case 'CONDIMENT':
-        return 'https://bigoven-res.cloudinary.com/image/upload/t_recipe-256/mcdonalds-special-sauce-big-mac-sauce-2026411.jpg'
+        return `${
+          urlPrefixes.topSecretRecipies
+        }t_recipe-256/mcdonalds-special-sauce-big-mac-sauce-2026411.jpg`
       case 'ALLDAYBREAKFAST':
-        return 'https://www.mcdonalds.com/is/image/content/dam/usa/nfl/assets/nav/nav_breakfast_80x80.png?$Category_Mobile$'
+        return `${
+          urlPrefixes.mcDonalds
+        }nav_breakfast_80x80.png?$Category_Mobile$`
       case 'ADBISCUIT':
-        return 'https://www.mcdonalds.com/is/image/content/dam/usa/nfl/assets/nav/nav_bakery_80x80.jpg?$Menu_Thumbnail$'
+        return `${urlPrefixes.mcDonalds}nav_bakery_80x80.jpg?$Menu_Thumbnail$`
       case 'ADBMUFFIN':
-        return 'https://www.mcdonalds.com/is/image/content/dam/usa/nfl/assets/nav/nav_bakery_80x80.jpg?$Menu_Thumbnail$'
+        return `${urlPrefixes.mcDonalds}nav_bakery_80x80.jpg?$Menu_Thumbnail$`
       case 'HAPPYMEAL':
-        return 'https://www.mcdonalds.com/is/image/content/dam/usa/nfl/assets/nav/nav_happy_meal_80x80.jpg?$Menu_Thumbnail$'
+        return `${
+          urlPrefixes.mcDonalds
+        }nav_happy_meal_80x80.jpg?$Menu_Thumbnail$`
       case 'MCPICK2A':
         return 'McPick2A'
       case 'SIGNATURE':
-        return 'https://www.mcdonalds.com/is/image/content/dam/usa/nfl/assets/nav/nav_extra_value_meal_80x80.jpg?$Menu_Thumbnail$'
+        return `${
+          urlPrefixes.mcDonalds
+        }nav_extra_value_meal_80x80.jpg?$Menu_Thumbnail$`
       case 'MCPICK2B':
-        return 'https://www.mcdonalds.com/is/image/content/dam/usa/nfl/assets/nav/nav_extra_value_meal_80x80.jpg?$Menu_Thumbnail$'
+        return `${
+          urlPrefixes.mcDonalds
+        }nav_extra_value_meal_80x80.jpg?$Menu_Thumbnail$`
       case 'MCPICK2C':
-        return 'https://www.mcdonalds.com/is/image/content/dam/usa/nfl/assets/nav/nav_extra_value_meal_80x80.jpg?$Menu_Thumbnail$'
+        return `${
+          urlPrefixes.mcDonalds
+        }nav_extra_value_meal_80x80.jpg?$Menu_Thumbnail$`
     }
   }
 
