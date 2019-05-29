@@ -1,15 +1,25 @@
 {
-	"linterOptions": {
-		"exclude": ["bin", "build", "config", "coverage", "node_modules", "**/*.d.ts"]
-	},
-	"extends": ["tslint:recommended"],
-	"rules": {
-		"no-unreachable": true,
-		"indent": [true, "tabs"],
-		"semicolon": false,
-		"object-literal-sort-keys": false,
-		"no-console": false,
-		"interface-name": false,
-		"class-name": false
-	}
+  "linterOptions": {
+    "exclude": [
+      "bin",
+      "build",
+      "config",
+      "coverage",
+      "node_modules",
+      "**/*.d.ts"
+    ]
+  },
+  "extends": ["tslint:recommended", "tslint-config-prettier"],
+  "rules": {
+    "no-unreachable": true,
+    "indent": [true, "spaces"],
+    "quotemark": [true, "single"],
+    "max-line-length": [true, 120],
+    "no-empty": false,
+    "semicolon": false,
+    "object-literal-sort-keys": false,
+    "no-console": false,
+    "interface-name": false,
+    "class-name": false
+  }
 }
