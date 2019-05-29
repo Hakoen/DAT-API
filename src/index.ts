@@ -81,7 +81,7 @@ createConnection()
     app.post('/parse', async (req, res) => {
       try {
         const importer = new McDonaldsImporter(
-          path.resolve(__dirname, 'data', 'mcdonalds-products-test.csv')
+          path.resolve(__dirname, 'data', 'mcdonalds-products.csv')
         )
         await importer.import(categories, products)
         res.status(201)
