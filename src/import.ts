@@ -50,6 +50,7 @@ class McDonaldsImporter {
           this.rows = [...this.rows, row]
         })
         .on('end', () => {
+          // TODO: fix category check, to prevent category duplicates
           this.rows.map(async (row: Row) => {
             try {
               let category = await categories.findOne({
