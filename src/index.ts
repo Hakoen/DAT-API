@@ -35,10 +35,6 @@ createConnection()
       console.log(`server is running on: http://localhost:${port}`)
     })
 
-    app.post('/place_order', (req: Request, res: Response) => {
-      res.send(isOrder(req.body))
-    })
-
     app.post('/tag', (req: Request, res: Response) => {
       const newTag = tagRepo.create({
         name: req.body.name,
@@ -77,7 +73,7 @@ createConnection()
         .then(user => {
           const orderedProducts: string[] = req.body.products
           let tags: Tag[] = user.tags;
-          
+
           //loop through tags in order, add to user's tag array
           orderedProducts.forEach(tagString => {
             tagRepo.findOne({ name: tagString }).then(tag => {
@@ -90,13 +86,13 @@ createConnection()
 
           user.tags = tags;
           usersRepo.save(user)
-          .then(() => {
-            res.sendStatus(201)
-          }).catch(err => {
-            console.log('Could not save user\'s order: ', err)
-            res.sendStatus(406)
-          })
-
+            .then(() => {
+              res.sendStatus(201)
+            }).catch(err => {
+              console.log('Could not save user\'s order: ', err)
+              res.sendStatus(406)
+            })
+            
         }).catch(err => {
           console.log('Could not find user account: ', err)
           res.sendStatus(404)
