@@ -16,6 +16,7 @@ import { getProducts } from './services'
 import { isOrder } from './validation/order'
 import path from 'path'
 import { McDonaldsImporter } from './import'
+import { readSync } from 'fs';
 
 const app = express()
 const port = 8080
@@ -67,6 +68,38 @@ createConnection()
         .catch(err => {
           console.log(err)
           res.sendStatus(500)
+        })
+    })
+
+    app.post('/place_order', (req: Request, res: Response) => {
+      usersRepo
+        .findOne({ id: req.body.user_id })
+        .then(user => {
+          const orderedProducts: string[] = req.body.products
+          let tags: Tag[] = user.tags;
+          
+          //loop through tags in order, add to user's tag array
+          orderedProducts.forEach(tagString => {
+            tagRepo.findOne({ name: tagString }).then(tag => {
+              tags.push(tag)
+            }).catch(err => {
+              console.log('Could not find tag (' + tagString + '): ', err);
+              res.sendStatus(404);
+            })
+          })
+
+          user.tags = tags;
+          usersRepo.save(user)
+          .then(() => {
+            res.sendStatus(201)
+          }).catch(err => {
+            console.log('Could not save user\'s order: ', err)
+            res.sendStatus(406)
+          })
+
+        }).catch(err => {
+          console.log('Could not find user account: ', err)
+          res.sendStatus(404)
         })
     })
 
