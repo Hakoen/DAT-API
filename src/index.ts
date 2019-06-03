@@ -17,6 +17,11 @@ import { isOrder } from './validation/order'
 import path from 'path'
 import { McDonaldsImporter } from './import'
 import { readSync } from 'fs';
+import { ProductCm, UserCm } from "./client_models";
+import { ClientModel } from "./client_models/clientModel";
+import { User, Tag, Product } from "./models";
+import { getProducts } from "./services";
+import { isOrder } from "./validation/order";
 
 const app = express()
 const port = 8080

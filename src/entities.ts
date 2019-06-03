@@ -10,6 +10,7 @@ import {
 import { UserCm } from './client_models/userCm'
 import { DatabaseModel } from './models/databaseModel'
 
+
 // TODO:
 //  1. Move models to ./models folder, 1 class per file.
 //  2. Add DatabaseModel<...> to all entities (and include methods)

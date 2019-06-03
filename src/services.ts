@@ -1,7 +1,7 @@
 import express, { Request, Response } from "express";
 import "reflect-metadata";
 import { createConnection } from "typeorm";
-import { Product, ProductCategory, User } from "./Entities";
+import { Product } from "./models"
 
 export const getProducts = async (): Promise<Product[]> => {
 	const connection = await createConnection();
