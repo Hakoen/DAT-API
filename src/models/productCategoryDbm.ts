@@ -1,28 +1,21 @@
-import {
-    Column,
-    Entity,
-    OneToMany,
-    PrimaryGeneratedColumn
-} from "typeorm";
+import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm'
 
-import { Product } from "./productDbm"
-
+import { Product } from './productDbm'
 
 @Entity()
 export class ProductCategory {
-    
-    @PrimaryGeneratedColumn()
-    id: number;
+  @PrimaryGeneratedColumn()
+  public id: number
 
-    @Column()
-    name: string;
+  @Column()
+  public name: string
 
-    @Column()
-    description: string;
+  @Column()
+  public description: string
 
-    @Column()
-    iconUrl: string;
+  @Column()
+  public iconUrl: string
 
-    @OneToMany(() => Product, (product: Product) => product.productCategory)
-    products: Product[];
+  @OneToMany(() => Product, (product: Product) => product.productCategory)
+  public products: Product[]
 }

@@ -1,6 +1,6 @@
-import { Tag } from "./tagDbm";
-import { User } from "./userDbm";
-import { Product } from "./productDbm";
-import { ProductCategory } from "./productCategoryDbm"; 
+import { ProductCategory } from './productCategoryDbm'
+import { Product } from './productDbm'
+import { Tag } from './tagDbm'
+import { User } from './userDbm'
 
-export { User, Product, Tag, ProductCategory };
+export { User, Product, Tag, ProductCategory }

@@ -1,9 +1,9 @@
 import csv from 'csv-parser'
 import fs from 'fs'
-import { stringify } from 'querystring'
 import { Repository } from 'typeorm'
-import { Product, ProductCategory } from './entities'
 import { getRandomArbitrary, toTitleCase } from './helpers'
+import { ProductCategory } from './models/productCategoryDbm'
+import { Product } from './models/productDbm'
 
 class McDonaldsImporter {
   public file: string
@@ -85,7 +85,7 @@ class McDonaldsImporter {
       const newProduct = products.create({
         name: row.item,
         price: parseFloat(this.getProductPrice(category.name).toString()),
-        ProductCategory: category
+        productCategory: category
       })
       await products.save(newProduct)
     }

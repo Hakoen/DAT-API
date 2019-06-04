@@ -1,6 +1,6 @@
-import { ClientModel } from "./clientModel";
-import { ProductCm } from "./productCm";
-import { UserCm } from "./userCm";
-import {TagCm} from "./tagCm"
+import { ClientModel } from './clientModel'
+import { ProductCm } from './productCm'
+import { TagCm } from './tagCm'
+import { UserCm } from './userCm'
 
-export { ClientModel, UserCm, ProductCm, TagCm };
+export { ClientModel, UserCm, ProductCm, TagCm }

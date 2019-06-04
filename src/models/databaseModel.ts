@@ -1,3 +1,3 @@
 export abstract class DatabaseModel<T> {
-	abstract toClientModel(): T;
+  public abstract toClientModel(): T
 }

@@ -1,36 +1,35 @@
 import {
-    Column,
-    Entity,
-    ManyToOne,
-    PrimaryGeneratedColumn,
-    ManyToMany,
-    JoinTable
-} from "typeorm";
-import { Tag } from "./tagDbm"
-import { ProductCategory } from "./productCategoryDbm"
-
+  Column,
+  Entity,
+  JoinTable,
+  ManyToMany,
+  ManyToOne,
+  PrimaryGeneratedColumn
+} from 'typeorm'
+import { ProductCategory } from './productCategoryDbm'
+import { Tag } from './tagDbm'
 
 @Entity()
 export class Product {
-    @PrimaryGeneratedColumn()
-    id: number;
+  @PrimaryGeneratedColumn()
+  public id: number
 
-    @Column()
-    name: string;
+  @Column()
+  public name: string
 
-    @Column()
-    description: string;
+  @Column()
+  public description: string
 
-    @Column()
-    price: number;
+  @Column()
+  public price: number
 
-    @ManyToOne(
-        () => ProductCategory,
-        (productCategory: ProductCategory) => productCategory.products
-    )
-    productCategory: ProductCategory;
+  @ManyToOne(
+    () => ProductCategory,
+    (productCategory: ProductCategory) => productCategory.products
+  )
+  public productCategory: ProductCategory
 
-    @ManyToMany(() => Tag, (tag: Tag) => tag.products)
-    @JoinTable()
-    tags: Tag[];
+  @ManyToMany(() => Tag, (tag: Tag) => tag.products)
+  @JoinTable()
+  public tags: Tag[]
 }

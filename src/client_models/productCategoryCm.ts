@@ -1,33 +1,36 @@
-import { ProductCategory } from "../models/productCategoryDbm";
-import { Product } from "../models/productDbm";
-import { Tag } from "../models/tagDbm";
-import { ClientModel } from "./clientModel";
+import { ProductCategory } from '../models/productCategoryDbm'
+import { Product } from '../models/productDbm'
+import { Tag } from '../models/tagDbm'
+import { ClientModel } from './clientModel'
 
 export class ProductCategoryCm extends ClientModel<ProductCategory> {
+  public static fromDbModel = (model: ProductCategory): ProductCategoryCm =>
+    new ProductCategoryCm(
+      model.id.toString(),
+      model.name,
+      model.description,
+      model.iconUrl,
+      model.products
+    )
 
-    static fromDbModel = (model: ProductCategory): ProductCategoryCm =>
-        new ProductCategoryCm(
-            model.id.toString(),
-            model.name,
-            model.description,
-            model.iconUrl,
-            model.products
-        );
+  public readonly id: string
+  public readonly name: string
+  public readonly description: string
+  public readonly iconUrl: string
+  public readonly products: Product[]
 
-    readonly id: string;
-    readonly name: string;
-    readonly description: string;
-    readonly iconUrl: string;
-    readonly products: Product[];
-
-
-    constructor(id: string, name: string, description: string, iconUrl: string, products: Product[]) {
-        super();
-        this.id = id;
-        this.name = name;
-        this.description = description;
-        this.iconUrl = iconUrl;
-        this.products = products;
-
-    }
+  constructor(
+    id: string,
+    name: string,
+    description: string,
+    iconUrl: string,
+    products: Product[]
+  ) {
+    super()
+    this.id = id
+    this.name = name
+    this.description = description
+    this.iconUrl = iconUrl
+    this.products = products
+  }
 }
