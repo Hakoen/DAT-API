@@ -176,22 +176,22 @@ class McDonaldsImporter {
       case 'SIGNATURE':
       case 'MCPICK2B':
       case 'MCPICK2C':
-        return getRandomArbitrary(1, 5)
+        return getRandomArbitrary(100, 500)
       case 'BREAKFAST':
       case 'SNACKSIDE':
       case 'DESSERT':
       case 'ALLDAYBREAKFAST':
       case 'CONDIMENT':
       case 'ADBMUFFIN':
-        return getRandomArbitrary(1, 3)
+        return getRandomArbitrary(100, 300)
       case 'SALAD':
       case 'BEVERAGE':
       case 'MCCAFE':
       case 'ADBISCUIT':
       case 'HAPPYMEAL':
-        return getRandomArbitrary(1, 2)
+        return getRandomArbitrary(100, 200)
       default:
-        return getRandomArbitrary(0, 1)
+        return getRandomArbitrary(0, 100)
     }
   }
 }

@@ -1,7 +1,9 @@
 import bodyParser from 'body-parser'
 import express, { Request, Response } from 'express'
 import 'reflect-metadata'
-import { createConnection } from 'typeorm'
+import { createConnection, Repository } from 'typeorm'
+import { McDonaldsImporter } from './import'
+import { ProductCategory } from './models'
 import { Product } from './models/productDbm'
 import { Tag } from './models/tagDbm'
 import { User } from './models/userDbm'
@@ -12,6 +14,12 @@ const port = 8080
 
 createConnection()
   .then(async (connection) => {
+    // const imp = new McDonaldsImporter('./src/data/mcdonalds-products.csv')
+    // await imp.import(
+    //   connection.getRepository(ProductCategory),
+    //   connection.getRepository(Product)
+    // )
+    // console.log('Done')
     const usersRepo = connection.getRepository(User)
     const tagRepo = connection.getRepository(Tag)
 
