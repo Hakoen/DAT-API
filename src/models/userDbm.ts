@@ -17,24 +17,15 @@ export class User {
   public id: number
 
   // FIXME: See Tag.users
-  @ManyToMany(() => Tag, (tag: Tag) => tag.users)
-  @JoinTable()
-  public tags: Tag[]
+  // @ManyToMany(() => Tag, (tag: Tag) => tag.users)
+  // @JoinTable()
+  // public tags: Tag[]
 
-    public async convertToClient(user: User, userClient: UserCm) {
-        
-        
+  //   public async convertToClient(user: User /*, userClient: UserCm */) {
 
-
-
-
-
-
-
-
-        
-      return userClient;
-  }
+  //     // return userClient;
+  //     return
+  // }
   // FIXME: Consider using map<tagname, number_of_times_ordered> instead of list of tags:
   // NEED HELP:(
 

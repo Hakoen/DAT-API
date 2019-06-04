@@ -2,6 +2,7 @@ import bodyParser from 'body-parser'
 import express, { Request, Response } from 'express'
 import 'reflect-metadata'
 import { createConnection, Repository } from 'typeorm'
+import { AllModel } from './client_models/allmodelCm'
 import { McDonaldsImporter } from './import'
 import { ProductCategory } from './models'
 import { Product } from './models/productDbm'
@@ -105,7 +106,7 @@ createConnection()
         productsCat.push(...productsByCat.slice(0, 10))
       })
 
-      res.send({ products: productsCat, category, tags })
+      res.send(AllModel.toAllModel(category, productsCat, tags))
       // res.send(productsByCat)
     })
   })
