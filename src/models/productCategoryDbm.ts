@@ -10,8 +10,8 @@ export class ProductCategory {
   @Column()
   public name: string
 
-  @Column()
-  public description: string
+  @Column({ nullable: true })
+  public description?: string | null
 
   @Column()
   public iconUrl: string
