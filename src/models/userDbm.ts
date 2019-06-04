@@ -21,6 +21,20 @@ export class User {
   @JoinTable()
   public tags: Tag[]
 
+    public async convertToClient(user: User, userClient: UserCm) {
+        
+        
+
+
+
+
+
+
+
+
+        
+      return userClient;
+  }
   // FIXME: Consider using map<tagname, number_of_times_ordered> instead of list of tags:
   // NEED HELP:(
 
