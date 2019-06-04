@@ -7,7 +7,7 @@ import {
   OneToMany,
   PrimaryGeneratedColumn
 } from 'typeorm'
-import { UserCm } from '../client_models/userCm'
+// import { UserCm } from '../client_models/userCm'
 
 import { Tag } from './tagDbm'
 

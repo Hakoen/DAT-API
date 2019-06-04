@@ -16,7 +16,7 @@ RUN npm install
 COPY . .
 
 RUN npm run build
-COPY ormconfig.json ./dist/
+# COPY ormconfig.json ./dist/
 WORKDIR ./dist
 
 EXPOSE 8080

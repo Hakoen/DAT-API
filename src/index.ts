@@ -5,6 +5,7 @@ import { createConnection, Repository } from 'typeorm'
 import { McDonaldsImporter } from './import'
 import { ProductCategory } from './models'
 import { Product } from './models/productDbm'
+import { ProductForClient } from './models/productForClient'
 import { Tag } from './models/tagDbm'
 import { User } from './models/userDbm'
 import { isOrder } from './validation/order'
@@ -69,9 +70,43 @@ createConnection()
     app.get('/products', async (req: Request, res: Response) => {
       const products = await connection
         .getRepository(Product)
-        .createQueryBuilder('products')
+        .createQueryBuilder('product')
+        .leftJoinAndSelect('product.productCategory', 'productCategory')
         .getMany()
-      res.send(products)
+
+      const category = await connection
+        .getRepository(ProductCategory)
+        .createQueryBuilder()
+        .getMany()
+
+      const tags = await connection
+        .getRepository(Tag)
+        .createQueryBuilder()
+        .getMany()
+
+      const productsS: ProductForClient[] = []
+
+      products.forEach((product) => {
+        productsS.push({
+          category: product.productCategory.id,
+          id: product.id,
+          name: product.name,
+          price: product.price,
+          tags: []
+        })
+      })
+
+      const productsCat: ProductForClient[] = []
+
+      category.forEach((cat) => {
+        const productsByCat = productsS.filter((prod) => {
+          return prod.category === cat.id
+        })
+        productsCat.push(...productsByCat.slice(0, 10))
+      })
+
+      res.send({ products: productsCat, category, tags })
+      // res.send(productsByCat)
     })
   })
   .catch((err) => {
