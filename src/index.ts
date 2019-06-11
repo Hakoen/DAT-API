@@ -8,7 +8,6 @@ import { ProductCategory } from './models'
 import { Tag, User } from './models/'
 import { Product } from './models/productDbm'
 import { ProductForClient } from './models/productForClient'
-import { isOrder } from './validation/order'
 
 const app = express()
 const port = 8080
