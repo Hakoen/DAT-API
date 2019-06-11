@@ -5,7 +5,7 @@ import { createConnection, Repository } from 'typeorm'
 import { AllModel } from './client_models/allmodelCm'
 import { McDonaldsImporter } from './import'
 import { ProductCategory } from './models'
-import { Tag, User } from './models/'
+import { Tag, UserTag } from './models/'
 import { Product } from './models/productDbm'
 import { ProductForClient } from './models/productForClient'
 
@@ -14,15 +14,14 @@ const port = 8080
 
 createConnection()
   .then(async (connection) => {
-    // const imp = new McDonaldsImporter('./src/data/mcdonalds-products.csv')
+    // const imp = new McDonaldsImporter('./src/data/mcdonalds-products.csv');
     // await imp.import(
-    //   connection.getRepository(ProductCategory),
-    //   connection.getRepository(Product)
-    // )
-    // console.log('Done')
-    const usersRepo = connection.getRepository(User)
+    //  connection.getRepository(ProductCategory),
+    //  connection.getRepository(Product)
+    // );
+    // console.log('Done');
+    const usersRepo = connection.getRepository(UserTag)
     const tagRepo = connection.getRepository(Tag)
-    //  const userTagRepo = connection.getRepository(UserTag);
 
     app.use(bodyParser.json())
     // app.use(cors())
@@ -31,42 +30,42 @@ createConnection()
       console.log(`server is running on: http://localhost:${port}`)
     })
 
-    app.post('/place_order', (req: Request, res: Response) => {
-      usersRepo
-        .findOne({ id: req.body.user_id })
-        .then((user) => {
-          const orderedProducts: string[] = req.body.products
-          const tags: Tag[] = user.tags
+    // app.post('/place_order', (req: Request, res: Response) => {
+    //   usersRepo
+    //     .findOne({ id: req.body.user_id })
+    //     .then((user) => {
+    //       const orderedProducts: string[] = req.body.products
+    //       const tags: Tag[] = user.tags
 
-          // loop through tags in order, add to user's tag array
-          orderedProducts.forEach((tagString) => {
-            tagRepo
-              .findOne({ name: tagString })
-              .then((tag) => {
-                tags.push(tag)
-              })
-              .catch((err) => {
-                console.log(`Could not find tag (${tagString}): `, err)
-                res.sendStatus(404)
-              })
-          })
+    //       // loop through tags in order, add to user's tag array
+    //       orderedProducts.forEach((tagString) => {
+    //         tagRepo
+    //           .findOne({ name: tagString })
+    //           .then((tag) => {
+    //             tags.push(tag)
+    //           })
+    //           .catch((err) => {
+    //             console.log(`Could not find tag (${tagString}): `, err)
+    //             res.sendStatus(404)
+    //           })
+    //       })
 
-          user.tags = tags
-          usersRepo
-            .save(user)
-            .then(() => {
-              res.sendStatus(201)
-            })
-            .catch((err) => {
-              console.log('Could not save user\'s order: ', err)
-              res.sendStatus(406)
-            })
-        })
-        .catch((err) => {
-          console.log('Could not find user account: ', err)
-          res.sendStatus(404)
-        })
-    })
+    //       user.tags = tags
+    //       usersRepo
+    //         .save(user)
+    //         .then(() => {
+    //           res.sendStatus(201)
+    //         })
+    //         .catch((err) => {
+    //           console.log('Could not save user\'s order: ', err)
+    //           res.sendStatus(406)
+    //         })
+    //     })
+    //     .catch((err) => {
+    //       console.log('Could not find user account: ', err)
+    //       res.sendStatus(404)
+    //     })
+    // })
 
     app.post('/tag', (req: Request, res: Response) => {
       const newTag = tagRepo.create({
@@ -98,6 +97,21 @@ createConnection()
           console.log(err)
           res.sendStatus(500)
         })
+    })
+
+    app.get('/testrec', async (req: Request, res: Response) => {
+      const recProducts = await connection
+        .getRepository(UserTag)
+        .createQueryBuilder('userTag')
+        .where('userTag.userId = :id', { id: req.body.userId })
+        .leftJoinAndSelect(Tag, 'tag', 'tag.id = userTag.tagId')
+        .getMany()
+
+      recProducts.sort((userTag1: UserTag, userTag2: UserTag) => {
+        return userTag1.counter < userTag2.counter ? 1 : -1
+      })
+
+      res.send({ test: recProducts[0], test2: recProducts[1] })
     })
 
     app.get('/products', async (req: Request, res: Response) => {

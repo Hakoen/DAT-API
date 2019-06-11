@@ -5,6 +5,7 @@ import {
   ManyToMany,
   ManyToOne,
   OneToMany,
+  PrimaryColumn,
   PrimaryGeneratedColumn
 } from 'typeorm'
 // import { UserCm } from '../client_models/userCm'
@@ -12,14 +13,13 @@ import {
 import { Tag } from './tagDbm'
 
 @Entity()
-export class User {
-  @PrimaryGeneratedColumn()
-  public id: number
+export class UserTag {
+  @PrimaryColumn()
+  public userId: string
 
- 
-  @ManyToMany(() => Tag, (tag: Tag) => tag.users)
-  @JoinTable()
-  public tags: Tag[]
+  @PrimaryColumn()
+  public tagId: number
 
-
+  @Column()
+  public counter: number
 }

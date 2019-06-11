@@ -29,7 +29,7 @@ export class Product {
   )
   public productCategory: ProductCategory
 
-  @ManyToMany(() => Tag, (tag: Tag) => tag.products)
+  @ManyToMany(() => Tag, (tag: Tag) => tag)
   @JoinTable()
   public tags: Tag[]
 }
