@@ -3,10 +3,12 @@ import {
   Entity,
   JoinTable,
   ManyToMany,
-  PrimaryGeneratedColumn,
-  OneToMany
+  ManyToOne,
+  OneToMany,
+  PrimaryGeneratedColumn
 } from 'typeorm'
-import { Product, User } from '../models'
+import { Product } from '../models'
+import { UserTag } from './userDbm'
 
 @Entity()
 export class Tag {
@@ -19,13 +21,5 @@ export class Tag {
   @Column()
   public color: string
 
-  @ManyToMany((type) => Product, (product: Product) => product.tags)
-  @JoinTable()
-  public products: Product[]
-
   public toString = (): string => this.name
-
-    @ManyToMany(() => User, (user: User) => user.tags)
-    @JoinTable()
-    public users: User[]
 }

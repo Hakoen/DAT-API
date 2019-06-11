@@ -1,7 +1,6 @@
 import { ProductCategory } from './productCategoryDbm'
 import { Product } from './productDbm'
 import { Tag } from './tagDbm'
-import { User } from './userDbm'
-import { UserTag } from './userTagDbm'
+import { UserTag } from './userDbm'
 
-export { User, Product, Tag, ProductCategory, UserTag }
+export { UserTag, Product, Tag, ProductCategory }

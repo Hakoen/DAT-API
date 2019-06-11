@@ -1,9 +1,4 @@
-import {
-    Product,
-    Tag,
-    ProductCategory,
-    User
-} from '../models/'
+import { Product, ProductCategory, Tag, UserTag } from '../models/'
 import { ClientModel } from './clientModel'
 
 export class ProductCategoryCm extends ClientModel<ProductCategory> {
