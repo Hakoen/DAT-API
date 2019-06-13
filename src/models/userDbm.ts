@@ -9,7 +9,7 @@ import {
 } from 'typeorm'
 // import { UserCm } from '../client_models/userCm'
 
-import { Tag } from './tagDbm'
+import { UserTag } from './userTagDbm'
 
 @Entity()
 export class User {
@@ -32,4 +32,8 @@ export class User {
   // tags: { [key: string]: number }; // Use immutable.Map if possible.
 
   //  Example: {'vegan', 20, 'milkshake': 2}
+
+  @OneToMany(() => UserTag, (usertag: UserTag) => usertag.user)
+  userTags: UserTag[];
+    
 }

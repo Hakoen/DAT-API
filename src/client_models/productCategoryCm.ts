@@ -1,6 +1,9 @@
-import { ProductCategory } from '../models/productCategoryDbm'
-import { Product } from '../models/productDbm'
-import { Tag } from '../models/tagDbm'
+import {
+    Product,
+    Tag,
+    ProductCategory,
+    User
+} from '../models/'
 import { ClientModel } from './clientModel'
 
 export class ProductCategoryCm extends ClientModel<ProductCategory> {
