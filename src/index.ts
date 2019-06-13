@@ -20,8 +20,9 @@ createConnection()
     //  connection.getRepository(Product)
     // );
     // console.log('Done');
-    const usersRepo = connection.getRepository(UserTag)
+    const userTagRepo = connection.getRepository(UserTag)
     const tagRepo = connection.getRepository(Tag)
+    const productRepo = connection.getRepository(Product)
 
     app.use(bodyParser.json())
     // app.use(cors())
@@ -30,42 +31,36 @@ createConnection()
       console.log(`server is running on: http://localhost:${port}`)
     })
 
-    // app.post('/place_order', (req: Request, res: Response) => {
-    //   usersRepo
-    //     .findOne({ id: req.body.user_id })
-    //     .then((user) => {
-    //       const orderedProducts: string[] = req.body.products
-    //       const tags: Tag[] = user.tags
+    app.post('/place_order', (req: Request, res: Response) => {
+          const orderedProducts: number[] = req.body.products
 
-    //       // loop through tags in order, add to user's tag array
-    //       orderedProducts.forEach((tagString) => {
-    //         tagRepo
-    //           .findOne({ name: tagString })
-    //           .then((tag) => {
-    //             tags.push(tag)
-    //           })
-    //           .catch((err) => {
-    //             console.log(`Could not find tag (${tagString}): `, err)
-    //             res.sendStatus(404)
-    //           })
-    //       })
+          // loop through products, extract tags, find userTag combination: if not present Add one
+          orderedProducts.forEach(productString => {
+            productRepo.findOne({ id: productString })
+            .then(product => {
+              const productTags = product.tags;
+              productTags.forEach(tag => {
+                userTagRepo.findOne({ userId: req.body.userId, tagId: tag.id })
+                .then(userTag => {
+                  userTag.counter += 1
+                  userTagRepo.save(userTag);
 
-    //       user.tags = tags
-    //       usersRepo
-    //         .save(user)
-    //         .then(() => {
-    //           res.sendStatus(201)
-    //         })
-    //         .catch((err) => {
-    //           console.log('Could not save user\'s order: ', err)
-    //           res.sendStatus(406)
-    //         })
-    //     })
-    //     .catch((err) => {
-    //       console.log('Could not find user account: ', err)
-    //       res.sendStatus(404)
-    //     })
-    // })
+                }).catch(() => {
+                  const newUserTag = userTagRepo.create({
+                    userId: req.body.userId,
+                    tagId: tag.id,
+                    counter: 1
+                  })
+
+                  userTagRepo.save(newUserTag);
+                })
+              })
+            }).catch(err => {
+              console.log('Could not retrieve product: ', err)
+              res.status(404)
+            })
+          })          
+    })
 
     app.post('/tag', (req: Request, res: Response) => {
       const newTag = tagRepo.create({
