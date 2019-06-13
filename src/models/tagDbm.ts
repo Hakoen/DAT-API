@@ -6,7 +6,7 @@ import {
   PrimaryGeneratedColumn,
   OneToMany
 } from 'typeorm'
-import { Product, UserTag } from '../models'
+import { Product, User } from '../models'
 
 @Entity()
 export class Tag {
@@ -25,7 +25,7 @@ export class Tag {
 
   public toString = (): string => this.name
 
-  @OneToMany(() => UserTag, (usertag: UserTag) => usertag.user)
-  userTags: UserTag[];
-
+    @ManyToMany(() => User, (user: User) => user.tags)
+    @JoinTable()
+    public users: User[]
 }

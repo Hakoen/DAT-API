@@ -1,4 +1,4 @@
-import { User, Product, } from "../models/";
+import { User, Product, Tag } from "../models/";
 import { ProductCm, ClientModel } from '../client_models'
 
  export class UserCm extends ClientModel<User> {
@@ -6,9 +6,8 @@ import { ProductCm, ClientModel } from '../client_models'
      //static fromDbModel = (model: User): UserCm =>
      //    new UserCm(
      //        model.id.toString(),
-     //        model.
-     //        //TODO: userBackEnd to userFrontEnd
-
+     //        model.id.
+     //        TODO: userBackEnd to userFrontEnd
      //        );
 
      readonly id: string;
@@ -20,6 +19,6 @@ import { ProductCm, ClientModel } from '../client_models'
          this.recommendedProducts = recommendedProducts;
      }
 
-     // FIXME: Check if toJson needs to implemented.
+    //Tags -> Recommended products.
 
  }
