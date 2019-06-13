@@ -7,7 +7,7 @@ import { McDonaldsImporter } from './import'
 import { ProductCategory } from './models'
 import { Product } from './models/productDbm'
 import { ProductForClient } from './models/productForClient'
-import { Tag, User, UserTag } from './models/'
+import { Tag, User } from './models/'
 import { isOrder } from './validation/order'
 
 
@@ -16,15 +16,14 @@ const port = 8080;
 
 createConnection()
   .then(async (connection) => {
-     const imp = new McDonaldsImporter('./src/data/mcdonalds-products.csv');
-     await imp.import(
-       connection.getRepository(ProductCategory),
-       connection.getRepository(Product)
-     );
-     console.log('Done');
+     //const imp = new McDonaldsImporter('./src/data/mcdonalds-products.csv');
+     //await imp.import(
+     //  connection.getRepository(ProductCategory),
+     //  connection.getRepository(Product)
+     //);
+     //console.log('Done');
      const usersRepo = connection.getRepository(User);
      const tagRepo = connection.getRepository(Tag);
-     const userTagRepo = connection.getRepository(UserTag);
 
      app.use(bodyParser.json());
      // app.use(cors())
@@ -97,6 +96,17 @@ createConnection()
           res.sendStatus(500);
         });
     });
+
+    app.get('/testrec', async (req: Request, res: Response) => {
+        const recProducts = await connection
+            .getRepository(User)
+            .createQueryBuilder('user')
+            .leftJoinAndSelect('user.tags', 'tag')
+            .getMany();
+        res.send(recProducts);        
+      })
+
+    
 
 
     app.get('/products', async (req: Request, res: Response) => {
