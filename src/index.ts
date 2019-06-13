@@ -31,35 +31,39 @@ createConnection()
       console.log(`server is running on: http://localhost:${port}`)
     })
 
-    app.post('/place_order', (req: Request, res: Response) => {
-          const orderedProducts: number[] = req.body.products
+    app.post('/place_order', async (req: Request, res: Response) => {
+      const orderedProducts: number[] = req.body.products
 
-          // loop through products, extract tags, find userTag combination: if not present Add one
-          orderedProducts.forEach(productString => {
-            productRepo.findOne({ id: productString })
-            .then(product => {
-              const productTags = product.tags;
-              productTags.forEach(tag => {
-                userTagRepo.findOne({ userId: req.body.userId, tagId: tag.id })
-                .then(userTag => {
+      // loop through products, extract tags, find userTag combination: if not present Add one
+      orderedProducts.forEach(async (productString) => {
+        const products = await connection
+          .getRepository(Product)
+          .createQueryBuilder('product')
+          .where('product.id = :id', { id: productString })
+          .leftJoinAndSelect('product.tags', 'tag')
+          .getMany()
+
+        products.forEach((product: Product) => {
+          product.tags.forEach((tag) => {
+            try {
+              userTagRepo
+                .findOne({ userId: req.body.userId, tagId: tag.id })
+                .then((userTag) => {
                   userTag.counter += 1
-                  userTagRepo.save(userTag);
-
-                }).catch(() => {
-                  const newUserTag = userTagRepo.create({
-                    userId: req.body.userId,
-                    tagId: tag.id,
-                    counter: 1
-                  })
-
-                  userTagRepo.save(newUserTag);
+                  userTagRepo.save(userTag)
                 })
+            } catch {
+              const newUserTag = userTagRepo.create({
+                userId: req.body.userId,
+                tagId: tag.id,
+                counter: 1
               })
-            }).catch(err => {
-              console.log('Could not retrieve product: ', err)
-              res.status(404)
-            })
-          })          
+              userTagRepo.save(newUserTag)
+            }
+          })
+        })
+      })
+      res.send('Success')
     })
 
     app.post('/tag', (req: Request, res: Response) => {
@@ -114,6 +118,7 @@ createConnection()
         .getRepository(Product)
         .createQueryBuilder('product')
         .leftJoinAndSelect('product.productCategory', 'productCategory')
+        .leftJoinAndSelect('product.tags', 'tag')
         .getMany()
 
       const category = await connection
@@ -129,12 +134,20 @@ createConnection()
       const productsS: ProductForClient[] = []
 
       products.forEach((product) => {
+        const tagIds: number[] = []
+
+        if (product.tags !== undefined) {
+          product.tags.forEach((tag) => {
+            tagIds.push(tag.id)
+          })
+        }
+
         productsS.push({
           category: product.productCategory.id,
           id: product.id,
           name: product.name,
           price: product.price,
-          tags: []
+          tags: tagIds
         })
       })
 
