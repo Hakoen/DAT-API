@@ -8,6 +8,9 @@ import { ProductCategory } from './models'
 import { Tag, UserTag } from './models/'
 import { Product } from './models/productDbm'
 import { ProductForClient } from './models/productForClient'
+import { DetectResponse, IdentifyResponse } from './httpModels'
+import Axios from 'axios'
+import * as Path from 'path'
 
 const app = express()
 const port = 8080
@@ -162,6 +165,169 @@ createConnection()
 
       res.send(AllModel.toAllModel(category, productsCat, tags))
       // res.send(productsByCat)
+    })
+
+    app.post('login', async (req: Request, res: Response) => {
+      const baseUrl =
+        'https://westeurope.api.cognitive.microsoft.com/face/v1.0/'
+      const faceSetId = 'allon-test'
+
+      const createPerson = () => {
+        const personName = `Customer ${userTagRepo.count()}`
+        Axios.post(
+          Path.resolve(
+            baseUrl,
+            'persongroups',
+            personName.toLowerCase().replace(' ', '-'),
+            'persons'
+          ),
+          {
+            name: personName,
+            userData: personName
+          }
+        )
+          .then((_) => {})
+          .catch((e) => {
+            res.status(500)
+            res.send(
+              `Something went wrong creating a new account. Please contact the site adminstrator.`
+            )
+          })
+      }
+
+      if (
+        req.body.picture_urls &&
+        req.body.picture_urls.length === 6 &&
+        req.body.main_picture_url
+      ) {
+        try {
+          const detectRequest = Axios.post<DetectResponse>(
+            Path.resolve(
+              baseUrl,
+              'detect?returnFaceId=true&returnFaceLandmarks=false'
+            ),
+            { url: req.body.main_picture_url }
+          )
+          const detectRequest2 = Axios.post<DetectResponse>(
+            Path.resolve(
+              baseUrl,
+              'detect?returnFaceId=true&returnFaceLandmarks=false'
+            ),
+            { url: req.body.picture_urls[0] }
+          )
+          const detectRequest3 = Axios.post<DetectResponse>(
+            Path.resolve(
+              baseUrl,
+              'detect?returnFaceId=true&returnFaceLandmarks=false'
+            ),
+            { url: req.body.picture_urls[1] }
+          )
+          const detectRequest4 = Axios.post<DetectResponse>(
+            Path.resolve(
+              baseUrl,
+              'detect?returnFaceId=true&returnFaceLandmarks=false'
+            ),
+            { url: req.body.picture_urls[2] }
+          )
+          const detectRequest5 = Axios.post<DetectResponse>(
+            Path.resolve(
+              baseUrl,
+              'detect?returnFaceId=true&returnFaceLandmarks=false'
+            ),
+            { url: req.body.picture_urls[3] }
+          )
+          const detectRequest6 = Axios.post<DetectResponse>(
+            Path.resolve(
+              baseUrl,
+              'detect?returnFaceId=true&returnFaceLandmarks=false'
+            ),
+            { url: req.body.picture_urls[4] }
+          )
+          const detectRequest7 = Axios.post<DetectResponse>(
+            Path.resolve(
+              baseUrl,
+              'detect?returnFaceId=true&returnFaceLandmarks=false'
+            ),
+            { url: req.body.picture_urls[5] }
+          )
+
+          const detectResponses = await detectRequest
+          const faceIds = detectResponses.data
+            .map((detectResponse) => detectResponse.faceId)
+            .filter((value, index, self) => self.indexOf(value) === index)
+
+          if (faceIds.length > 0) {
+            try {
+              const identifyResponse = await Axios.post(
+                Path.resolve(baseUrl, '/identify'),
+                {
+                  largePersonGroupId: faceSetId,
+                  faceIds: faceIds,
+                  maxNumOfCandidatesReturned: 1,
+                  confidenceThreshold: 0.8
+                }
+              )
+            } catch (e) {
+              if (e.code) {
+                if (e.code === 409) {
+                  // Maak een nieuw persoon aan.
+                }
+              }
+              res.status(500)
+              res.send(
+                `Something went wrong when identifying faces in the photos.`
+              )
+            }
+          } else {
+            Promise.all([
+              detectRequest2,
+              detectRequest3,
+              detectRequest4,
+              detectRequest4,
+              detectRequest5,
+              detectRequest6,
+              detectRequest7
+            ])
+              .then((data) => {
+                const faceIds = data
+                  .map((requests) =>
+                    requests.data.map((detectResponse) => detectResponse.faceId)
+                  )
+                  .reduce((prev, cur) => [...prev, ...cur])
+                  .filter((value, index, self) => self.indexOf(value) === index)
+                if (faceIds.length > 0) {
+                  Axios.post(Path.resolve(baseUrl, '/identify'), {
+                    largePersonGroupId: faceSetId,
+                    faceIds: faceIds,
+                    maxNumOfCandidatesReturned: 1,
+                    confidenceThreshold: 0.8
+                  })
+                    .then((data) => {})
+                    .catch((e) => {
+                      res.status(500)
+                      res.send(
+                        `Something went wrong when identifying faces in the photos.`
+                      )
+                    })
+                } else {
+                  // Maak een nieuw persoon aan.
+                }
+              })
+              .catch((e) => {
+                res.status(500)
+                res.send(
+                  `Something went wrong when detecting faces in the photos.`
+                )
+              })
+          }
+        } catch (e) {
+          res.status(500)
+          res.send(`Something went wrong when detecting faces in the photos.`)
+        }
+      } else {
+        res.status(400)
+        res.send('Wrong request, dude')
+      }
     })
   })
   .catch((err) => {
