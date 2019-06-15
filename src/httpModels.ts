@@ -13,16 +13,20 @@ type DetectResponse = Array<{
   }
 }>
 
-type IdentifyResponse = Array<{
+type IdentifyResponse = FaceObject[]
+
+interface FaceObject {
   faceId: string
-  candidates: Array<{
-    personId: string
-    confidence: number
-  }>
-}>
+  candidates: CandidateObject[]
+}
+
+interface CandidateObject {
+  personId: string
+  confidence: number
+}
 
 interface PersonCreateResponse {
   personId: string
 }
 
-export { DetectResponse, IdentifyResponse, PersonCreateResponse }
+export { DetectResponse, IdentifyResponse, PersonCreateResponse, FaceObject, CandidateObject }

@@ -15,6 +15,7 @@ import {
 } from './httpModels'
 import Axios, { AxiosResponse } from 'axios'
 import * as Path from 'path'
+import { compareCandidateObjects, compareFaceObjects } from './helpers'
 
 const app = express()
 const port = 8080
@@ -218,9 +219,10 @@ createConnection()
                   Path.resolve(baseUrl, 'persongroups', personGroupId, 'train')
                 )
                   .then((_) => {
-                    res.status(201)
+                    res.status(200)
                     res.send({
-                      userId: personData.data.personId
+                      user_id: personData.data.personId,
+                      recommended_products: []
                     })
                   })
                   .catch((_) => {
@@ -300,7 +302,24 @@ createConnection()
                   confidenceThreshold: 0.8
                 }
               )
-              // Do something with the identity response
+              // TODO: Do something with the identity response
+              const faces = [
+                ...identifyResponse.data
+                  .map((face) => {
+                    const candidates = [...face.candidates]
+                    return {
+                      ...face,
+                      candidates: candidates.sort(compareCandidateObjects)
+                    }
+                  })
+                  .sort(compareFaceObjects)
+              ]
+              res.status(200)
+              // TODO: Send recommended products
+              res.send({
+                user_id: faces[0].candidates[0].personId,
+                recommended_products: []
+              })
             } catch (e) {
               if (e.code) {
                 if (e.code === 409) {
