@@ -175,7 +175,7 @@ createConnection()
       // res.send(productsByCat)
     })
 
-    app.post('login', async (req: Request, res: Response) => {
+    app.post('/login', async (req: Request, res: Response) => {
       const AuthAxios = Axios.create({
         headers: { 'Ocp-Apim-Subscription-Key': process.env.FACE_API_KEY }
       })
@@ -186,7 +186,7 @@ createConnection()
       const createPerson = () => {
         const personName = `Customer ${userTagRepo.count()}`
         AuthAxios.post<PersonCreateResponse>(
-          Path.resolve(baseUrl, 'persongroups', personGroupId, 'persons'),
+          `${baseUrl}persongroups/${personGroupId}/persons`,
           {
             name: personName,
             userData: personName
@@ -195,25 +195,17 @@ createConnection()
           .then((personData) => {
             const faceCreateRequests: Array<Promise<any>> = [
               AuthAxios.post(
-                Path.resolve(
-                  baseUrl,
-                  'persongroups',
-                  personGroupId,
-                  'person',
-                  personData.data.personId,
-                  'persistedFaces'
-                ),
+                `${baseUrl}persongroups/${personGroupId}/person/${
+                  personData.data.personId
+                }/persistedFaces`,
                 { url: req.body.main_picture_url }
               ),
               ...req.body.picture_urls.map((url: string) => {
                 return AuthAxios.post(
                   Path.resolve(
-                    baseUrl,
-                    'persongroups',
-                    personGroupId,
-                    'person',
-                    personData.data.personId,
-                    'persistedFaces'
+                    `${baseUrl}persongroups/${personGroupId}/person/${
+                      personData.data.personId
+                    }/persistedFaces`
                   ),
                   { url }
                 )
@@ -221,9 +213,7 @@ createConnection()
             ]
             Promise.all(faceCreateRequests)
               .then((_) => {
-                AuthAxios.post(
-                  Path.resolve(baseUrl, 'persongroups', personGroupId, 'train')
-                )
+                AuthAxios.post(`${baseUrl}persongroups/${personGroupId}/train`)
                   .then((_) => {
                     res.status(200)
                     res.send({
@@ -239,14 +229,11 @@ createConnection()
                   })
               })
               .catch((e) => {
+                console.log(JSON.stringify(e, null, 2))
                 AuthAxios.delete(
-                  Path.resolve(
-                    baseUrl,
-                    'persongroups',
-                    personGroupId,
-                    'person',
+                  `${baseUrl}persongroups/${personGroupId}/person/${
                     personData.data.personId
-                  )
+                  }`
                 ).catch((_) => {
                   res.status(500)
                   res.send(
@@ -260,6 +247,7 @@ createConnection()
               })
           })
           .catch((e) => {
+            console.log(JSON.stringify(e, null, 2))
             res.status(500)
             res.send(
               `Something went wrong creating a new account. Please contact the site adminstrator.`
@@ -273,21 +261,24 @@ createConnection()
         req.body.main_picture_url
       ) {
         try {
+          AuthAxios.post<DetectResponse>(
+            `${baseUrl}detect?returnFaceId=true&returnFaceLandmarks=false`,
+            { url: req.body.main_picture_url }
+          )
+            .then((_) => {})
+            .catch((e) => {
+              console.log(JSON.stringify(e, null, 2))
+            })
+
           const detectRequest = AuthAxios.post<DetectResponse>(
-            Path.resolve(
-              baseUrl,
-              'detect?returnFaceId=true&returnFaceLandmarks=false'
-            ),
+            `${baseUrl}detect?returnFaceId=true&returnFaceLandmarks=false`,
             { url: req.body.main_picture_url }
           )
           const detectRequests: Array<
             Promise<AxiosResponse<DetectResponse>>
           > = req.body.picture_urls.map((url: string) => {
             return AuthAxios.post<DetectResponse>(
-              Path.resolve(
-                baseUrl,
-                'detect?returnFaceId=true&returnFaceLandmarks=false'
-              ),
+              `${baseUrl}detect?returnFaceId=true&returnFaceLandmarks=false`,
               { url }
             )
           })
@@ -300,7 +291,7 @@ createConnection()
           if (faceIds.length > 0) {
             try {
               const identifyResponse = await AuthAxios.post<IdentifyResponse>(
-                Path.resolve(baseUrl, '/identify'),
+                `${baseUrl}identify`,
                 {
                   largePersonGroupId: personGroupId,
                   faceIds,
@@ -308,7 +299,6 @@ createConnection()
                   confidenceThreshold: 0.8
                 }
               )
-              // TODO: Do something with the identity response
               console.log(
                 'Before ordering: ',
                 JSON.stringify(identifyResponse.data)
@@ -334,6 +324,7 @@ createConnection()
                 recommended_products: []
               })
             } catch (e) {
+              console.log(JSON.stringify(e, null, 2))
               if (e.code) {
                 if (e.code === 409) {
                   createPerson()
@@ -354,7 +345,7 @@ createConnection()
                   .reduce((prev, cur) => [...prev, ...cur])
                   .filter((value, index, self) => self.indexOf(value) === index)
                 if (secondTryFaceIds.length > 0) {
-                  AuthAxios.post(Path.resolve(baseUrl, '/identify'), {
+                  AuthAxios.post(`${baseUrl}identify`, {
                     largePersonGroupId: personGroupId,
                     faceIds: secondTryFaceIds,
                     maxNumOfCandidatesReturned: 1,
@@ -362,6 +353,7 @@ createConnection()
                   })
                     .then((identityData) => {})
                     .catch((e) => {
+                      console.log(JSON.stringify(e, null, 2))
                       res.status(500)
                       res.send(
                         `Something went wrong when identifying faces in the photos.`
@@ -372,6 +364,7 @@ createConnection()
                 }
               })
               .catch((e) => {
+                console.log(JSON.stringify(e, null, 2))
                 res.status(500)
                 res.send(
                   `Something went wrong when detecting faces in the photos.`
@@ -379,8 +372,11 @@ createConnection()
               })
           }
         } catch (e) {
+          console.log(JSON.stringify(e, null, 2))
           res.status(500)
-          res.send(`Something went wrong when detecting faces in the photos.`)
+          res.send(
+            `Something went wrong when detecting faces in the main photo.`
+          )
         }
       } else {
         res.status(400)
