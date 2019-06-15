@@ -4,8 +4,9 @@ import 'reflect-metadata'
 import { createConnection, Repository } from 'typeorm'
 import { AllModel } from './client_models/allmodelCm'
 import { McDonaldsImporter } from './import'
-import { ProductCategory, Tag, UserTag, Product } from './models'
+import { Product, ProductCategory, Tag, UserTag } from './models'
 import { ProductForClient } from './models/productForClient'
+import { getRecommendations } from './services'
 
 const app = express()
 const port = 8080
@@ -21,7 +22,6 @@ createConnection()
     const userTagRepo = connection.getRepository(UserTag)
     const tagRepo = connection.getRepository(Tag)
     const productRepo = connection.getRepository(Product)
-    
 
     app.use(bodyParser.json())
     // app.use(cors())
@@ -97,39 +97,9 @@ createConnection()
         })
     })
 
-    app.get('/testrec', async (req: Request, res: Response) => {
-      const recTags = await connection
-        .getRepository(UserTag)
-        .createQueryBuilder('userTag')
-        .where('userTag.userId = :id', { id: req.body.userId })
-        .leftJoinAndSelect(Tag, 'tag', 'tag.id = userTag.tagId')
-        .getMany()
-
-        recTags.sort((userTag1: UserTag, userTag2: UserTag) => {
-        return userTag1.counter < userTag2.counter ? 1 : -1
-        })
-
-      const products1 = await connection
-        .getRepository(Product)
-        .createQueryBuilder('product')
-        .where('product.tagId = :id', { id: recTags[0].tagId })
-        .leftJoinAndSelect(Product, 'product', 'product.tagId = Tag.Id ')
-        .take(7)
-        .getMany()
-
-      const products2 = await connection
-        .getRepository(Product)
-        .createQueryBuilder('product')
-        .where('product.tagId = :id', { id: recTags[1].tagId })
-        .leftJoinAndSelect(Product, 'product', 'product.tagId = Tag.Id ') 
-        .take(3)
-        .getMany()
-
-      let recProducts: Array<number> = []
-        products1.map(p1 => recProducts.push(p1.id))
-        products2.map(p2 => recProducts.push(p2.id))
-        
-        res.send({recProducts})
+    app.get('/recommendations', async (req: Request, res: Response) => {
+      const recProducts = await getRecommendations(connection, req.body.userId)
+      res.send({ recommended_products: recProducts })
     })
 
     app.get('/products', async (req: Request, res: Response) => {
