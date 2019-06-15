@@ -285,7 +285,7 @@ createConnection()
               const identifyResponse = await AuthAxios.post<IdentifyResponse>(
                 `${baseUrl}identify`,
                 {
-                  largePersonGroupId: personGroupId,
+                  personGroupId,
                   faceIds,
                   maxNumOfCandidatesReturned: 1,
                   confidenceThreshold: 0.8
