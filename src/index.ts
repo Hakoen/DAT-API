@@ -1,22 +1,21 @@
+import Axios, { AxiosResponse } from 'axios'
 import bodyParser from 'body-parser'
 import express, { Request, Response } from 'express'
+import * as Path from 'path'
 import 'reflect-metadata'
 import { createConnection, Repository } from 'typeorm'
 import { AllModel } from './client_models/allmodelCm'
-import { McDonaldsImporter } from './import'
-import { ProductCategory } from './models'
-import { Tag, UserTag } from './models/'
-import { Product } from './models/productDbm'
-import { ProductForClient } from './models/productForClient'
+import { compareCandidateObjects, compareFaceObjects } from './helpers'
 import {
   DetectResponse,
   IdentifyResponse,
   PersonCreateResponse
 } from './httpModels'
-import Axios, { AxiosResponse } from 'axios'
-import * as Path from 'path'
-import { compareCandidateObjects, compareFaceObjects } from './helpers'
 import { config } from 'dotenv'
+import { McDonaldsImporter } from './import'
+import { Product, ProductCategory, Tag, UserTag } from './models'
+import { ProductForClient } from './models/productForClient'
+import { getRecommendations } from './services'
 
 const app = express()
 const port = 8080
@@ -109,19 +108,9 @@ createConnection()
         })
     })
 
-    app.get('/testrec', async (req: Request, res: Response) => {
-      const recProducts = await connection
-        .getRepository(UserTag)
-        .createQueryBuilder('userTag')
-        .where('userTag.userId = :id', { id: req.body.userId })
-        .leftJoinAndSelect(Tag, 'tag', 'tag.id = userTag.tagId')
-        .getMany()
-
-      recProducts.sort((userTag1: UserTag, userTag2: UserTag) => {
-        return userTag1.counter < userTag2.counter ? 1 : -1
-      })
-
-      res.send({ test: recProducts[0], test2: recProducts[1] })
+    app.get('/recommendations', async (req: Request, res: Response) => {
+      const recProducts = await getRecommendations(connection, req.body.userId)
+      res.send({ recommended_products: recProducts })
     })
 
     app.get('/products', async (req: Request, res: Response) => {
@@ -319,9 +308,13 @@ createConnection()
               console.log('After ordering: ', JSON.stringify(faces))
               res.status(200)
               // TODO: Send recommended products
+              const recProducts = await getRecommendations(
+                connection,
+                faces[0].candidates[0].personId
+              )
               res.send({
                 user_id: faces[0].candidates[0].personId,
-                recommended_products: []
+                recommended_products: recProducts
               })
             } catch (e) {
               console.log(JSON.stringify(e, null, 2))
