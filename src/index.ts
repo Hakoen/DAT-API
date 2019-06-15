@@ -16,9 +16,12 @@ import {
 import Axios, { AxiosResponse } from 'axios'
 import * as Path from 'path'
 import { compareCandidateObjects, compareFaceObjects } from './helpers'
+import { config } from 'dotenv'
 
 const app = express()
 const port = 8080
+
+config({ path: Path.resolve(__dirname, '..', '.env') })
 
 createConnection()
   .then(async (connection) => {
@@ -173,13 +176,16 @@ createConnection()
     })
 
     app.post('login', async (req: Request, res: Response) => {
+      const AuthAxios = Axios.create({
+        headers: { 'Ocp-Apim-Subscription-Key': process.env.FACE_API_KEY }
+      })
       const baseUrl =
         'https://westeurope.api.cognitive.microsoft.com/face/v1.0/'
       const personGroupId = 'allon-test'
 
       const createPerson = () => {
         const personName = `Customer ${userTagRepo.count()}`
-        Axios.post<PersonCreateResponse>(
+        AuthAxios.post<PersonCreateResponse>(
           Path.resolve(baseUrl, 'persongroups', personGroupId, 'persons'),
           {
             name: personName,
@@ -188,7 +194,7 @@ createConnection()
         )
           .then((personData) => {
             const faceCreateRequests: Array<Promise<any>> = [
-              Axios.post(
+              AuthAxios.post(
                 Path.resolve(
                   baseUrl,
                   'persongroups',
@@ -200,7 +206,7 @@ createConnection()
                 { url: req.body.main_picture_url }
               ),
               ...req.body.picture_urls.map((url: string) => {
-                return Axios.post(
+                return AuthAxios.post(
                   Path.resolve(
                     baseUrl,
                     'persongroups',
@@ -215,7 +221,7 @@ createConnection()
             ]
             Promise.all(faceCreateRequests)
               .then((_) => {
-                Axios.post(
+                AuthAxios.post(
                   Path.resolve(baseUrl, 'persongroups', personGroupId, 'train')
                 )
                   .then((_) => {
@@ -233,7 +239,7 @@ createConnection()
                   })
               })
               .catch((e) => {
-                Axios.delete(
+                AuthAxios.delete(
                   Path.resolve(
                     baseUrl,
                     'persongroups',
@@ -267,7 +273,7 @@ createConnection()
         req.body.main_picture_url
       ) {
         try {
-          const detectRequest = Axios.post<DetectResponse>(
+          const detectRequest = AuthAxios.post<DetectResponse>(
             Path.resolve(
               baseUrl,
               'detect?returnFaceId=true&returnFaceLandmarks=false'
@@ -277,7 +283,7 @@ createConnection()
           const detectRequests: Array<
             Promise<AxiosResponse<DetectResponse>>
           > = req.body.picture_urls.map((url: string) => {
-            return Axios.post<DetectResponse>(
+            return AuthAxios.post<DetectResponse>(
               Path.resolve(
                 baseUrl,
                 'detect?returnFaceId=true&returnFaceLandmarks=false'
@@ -293,7 +299,7 @@ createConnection()
 
           if (faceIds.length > 0) {
             try {
-              const identifyResponse = await Axios.post<IdentifyResponse>(
+              const identifyResponse = await AuthAxios.post<IdentifyResponse>(
                 Path.resolve(baseUrl, '/identify'),
                 {
                   largePersonGroupId: personGroupId,
@@ -303,17 +309,24 @@ createConnection()
                 }
               )
               // TODO: Do something with the identity response
+              console.log(
+                'Before ordering: ',
+                JSON.stringify(identifyResponse.data)
+              )
               const faces = [
                 ...identifyResponse.data
                   .map((face) => {
-                    const candidates = [...face.candidates]
+                    const candidates = [
+                      ...face.candidates.sort(compareCandidateObjects)
+                    ]
                     return {
                       ...face,
-                      candidates: candidates.sort(compareCandidateObjects)
+                      candidates
                     }
                   })
                   .sort(compareFaceObjects)
               ]
+              console.log('After ordering: ', JSON.stringify(faces))
               res.status(200)
               // TODO: Send recommended products
               res.send({
@@ -341,7 +354,7 @@ createConnection()
                   .reduce((prev, cur) => [...prev, ...cur])
                   .filter((value, index, self) => self.indexOf(value) === index)
                 if (secondTryFaceIds.length > 0) {
-                  Axios.post(Path.resolve(baseUrl, '/identify'), {
+                  AuthAxios.post(Path.resolve(baseUrl, '/identify'), {
                     largePersonGroupId: personGroupId,
                     faceIds: secondTryFaceIds,
                     maxNumOfCandidatesReturned: 1,
