@@ -166,7 +166,10 @@ createConnection()
 
     app.post('/login', async (req: Request, res: Response) => {
       const AuthAxios = Axios.create({
-        headers: { 'Ocp-Apim-Subscription-Key': process.env.FACE_API_KEY }
+        headers: {
+          'Ocp-Apim-Subscription-Key': process.env.FACE_API_KEY,
+          'Content-Type': 'application/json'
+        }
       })
       const baseUrl =
         'https://westeurope.api.cognitive.microsoft.com/face/v1.0/'
