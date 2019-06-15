@@ -21,4 +21,8 @@ type IdentifyResponse = Array<{
   }>
 }>
 
-export { DetectResponse, IdentifyResponse }
+interface PersonCreateResponse {
+  personId: string
+}
+
+export { DetectResponse, IdentifyResponse, PersonCreateResponse }

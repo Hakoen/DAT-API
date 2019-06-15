@@ -8,8 +8,12 @@ import { ProductCategory } from './models'
 import { Tag, UserTag } from './models/'
 import { Product } from './models/productDbm'
 import { ProductForClient } from './models/productForClient'
-import { DetectResponse, IdentifyResponse } from './httpModels'
-import Axios from 'axios'
+import {
+  DetectResponse,
+  IdentifyResponse,
+  PersonCreateResponse
+} from './httpModels'
+import Axios, { AxiosResponse } from 'axios'
 import * as Path from 'path'
 
 const app = express()
@@ -170,23 +174,83 @@ createConnection()
     app.post('login', async (req: Request, res: Response) => {
       const baseUrl =
         'https://westeurope.api.cognitive.microsoft.com/face/v1.0/'
-      const faceSetId = 'allon-test'
+      const personGroupId = 'allon-test'
 
       const createPerson = () => {
         const personName = `Customer ${userTagRepo.count()}`
-        Axios.post(
-          Path.resolve(
-            baseUrl,
-            'persongroups',
-            personName.toLowerCase().replace(' ', '-'),
-            'persons'
-          ),
+        Axios.post<PersonCreateResponse>(
+          Path.resolve(baseUrl, 'persongroups', personGroupId, 'persons'),
           {
             name: personName,
             userData: personName
           }
         )
-          .then((_) => {})
+          .then((personData) => {
+            const faceCreateRequests: Array<Promise<any>> = [
+              Axios.post(
+                Path.resolve(
+                  baseUrl,
+                  'persongroups',
+                  personGroupId,
+                  'person',
+                  personData.data.personId,
+                  'persistedFaces'
+                ),
+                { url: req.body.main_picture_url }
+              ),
+              ...req.body.picture_urls.map((url: string) => {
+                return Axios.post(
+                  Path.resolve(
+                    baseUrl,
+                    'persongroups',
+                    personGroupId,
+                    'person',
+                    personData.data.personId,
+                    'persistedFaces'
+                  ),
+                  { url }
+                )
+              })
+            ]
+            Promise.all(faceCreateRequests)
+              .then((_) => {
+                Axios.post(
+                  Path.resolve(baseUrl, 'persongroups', personGroupId, 'train')
+                )
+                  .then((_) => {
+                    res.status(201)
+                    res.send({
+                      userId: personData.data.personId
+                    })
+                  })
+                  .catch((_) => {
+                    res.status(500)
+                    res.send(
+                      `Something went wrong training the person group. Please contact the site adminstrator.`
+                    )
+                  })
+              })
+              .catch((e) => {
+                Axios.delete(
+                  Path.resolve(
+                    baseUrl,
+                    'persongroups',
+                    personGroupId,
+                    'person',
+                    personData.data.personId
+                  )
+                ).catch((_) => {
+                  res.status(500)
+                  res.send(
+                    'Something went wrong while deleting the person when adding the faces went wrong. Please contact the site adminstrator.'
+                  )
+                })
+                res.status(500)
+                res.send(
+                  `Something went wrong adding the faces. Please contact the site adminstrator.`
+                )
+              })
+          })
           .catch((e) => {
             res.status(500)
             res.send(
@@ -208,48 +272,17 @@ createConnection()
             ),
             { url: req.body.main_picture_url }
           )
-          const detectRequest2 = Axios.post<DetectResponse>(
-            Path.resolve(
-              baseUrl,
-              'detect?returnFaceId=true&returnFaceLandmarks=false'
-            ),
-            { url: req.body.picture_urls[0] }
-          )
-          const detectRequest3 = Axios.post<DetectResponse>(
-            Path.resolve(
-              baseUrl,
-              'detect?returnFaceId=true&returnFaceLandmarks=false'
-            ),
-            { url: req.body.picture_urls[1] }
-          )
-          const detectRequest4 = Axios.post<DetectResponse>(
-            Path.resolve(
-              baseUrl,
-              'detect?returnFaceId=true&returnFaceLandmarks=false'
-            ),
-            { url: req.body.picture_urls[2] }
-          )
-          const detectRequest5 = Axios.post<DetectResponse>(
-            Path.resolve(
-              baseUrl,
-              'detect?returnFaceId=true&returnFaceLandmarks=false'
-            ),
-            { url: req.body.picture_urls[3] }
-          )
-          const detectRequest6 = Axios.post<DetectResponse>(
-            Path.resolve(
-              baseUrl,
-              'detect?returnFaceId=true&returnFaceLandmarks=false'
-            ),
-            { url: req.body.picture_urls[4] }
-          )
-          const detectRequest7 = Axios.post<DetectResponse>(
-            Path.resolve(
-              baseUrl,
-              'detect?returnFaceId=true&returnFaceLandmarks=false'
-            ),
-            { url: req.body.picture_urls[5] }
-          )
+          const detectRequests: Array<
+            Promise<AxiosResponse<DetectResponse>>
+          > = req.body.picture_urls.map((url: string) => {
+            return Axios.post<DetectResponse>(
+              Path.resolve(
+                baseUrl,
+                'detect?returnFaceId=true&returnFaceLandmarks=false'
+              ),
+              { url }
+            )
+          })
 
           const detectResponses = await detectRequest
           const faceIds = detectResponses.data
@@ -258,19 +291,20 @@ createConnection()
 
           if (faceIds.length > 0) {
             try {
-              const identifyResponse = await Axios.post(
+              const identifyResponse = await Axios.post<IdentifyResponse>(
                 Path.resolve(baseUrl, '/identify'),
                 {
-                  largePersonGroupId: faceSetId,
-                  faceIds: faceIds,
+                  largePersonGroupId: personGroupId,
+                  faceIds,
                   maxNumOfCandidatesReturned: 1,
                   confidenceThreshold: 0.8
                 }
               )
+              // Do something with the identity response
             } catch (e) {
               if (e.code) {
                 if (e.code === 409) {
-                  // Maak een nieuw persoon aan.
+                  createPerson()
                 }
               }
               res.status(500)
@@ -279,30 +313,22 @@ createConnection()
               )
             }
           } else {
-            Promise.all([
-              detectRequest2,
-              detectRequest3,
-              detectRequest4,
-              detectRequest4,
-              detectRequest5,
-              detectRequest6,
-              detectRequest7
-            ])
+            Promise.all(detectRequests)
               .then((data) => {
-                const faceIds = data
+                const secondTryFaceIds = data
                   .map((requests) =>
                     requests.data.map((detectResponse) => detectResponse.faceId)
                   )
                   .reduce((prev, cur) => [...prev, ...cur])
                   .filter((value, index, self) => self.indexOf(value) === index)
-                if (faceIds.length > 0) {
+                if (secondTryFaceIds.length > 0) {
                   Axios.post(Path.resolve(baseUrl, '/identify'), {
-                    largePersonGroupId: faceSetId,
-                    faceIds: faceIds,
+                    largePersonGroupId: personGroupId,
+                    faceIds: secondTryFaceIds,
                     maxNumOfCandidatesReturned: 1,
                     confidenceThreshold: 0.8
                   })
-                    .then((data) => {})
+                    .then((identityData) => {})
                     .catch((e) => {
                       res.status(500)
                       res.send(
@@ -310,7 +336,7 @@ createConnection()
                       )
                     })
                 } else {
-                  // Maak een nieuw persoon aan.
+                  createPerson()
                 }
               })
               .catch((e) => {
