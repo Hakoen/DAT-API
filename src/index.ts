@@ -15,6 +15,7 @@ import {
 import { McDonaldsImporter } from './import'
 import { Product, ProductCategory, Tag, UserTag } from './models'
 import { ProductForClient } from './models/productForClient'
+import { User } from './models/userDbm'
 import { getRecommendations } from './services'
 
 const app = express()
@@ -31,6 +32,7 @@ createConnection()
     // );
     // console.log('Done');
     const userTagRepo = connection.getRepository(UserTag)
+    const userRepo = connection.getRepository(User)
     const tagRepo = connection.getRepository(Tag)
     const productRepo = connection.getRepository(Product)
 
@@ -172,6 +174,22 @@ createConnection()
       // res.send(productsByCat)
     })
 
+    app.post('/parse', async (req, res) => {
+      try {
+        const imp = new McDonaldsImporter('./src/data/mcdonalds-products.csv')
+        await imp.import(
+          connection.getRepository(ProductCategory),
+          connection.getRepository(Product)
+        )
+        res.status(201)
+        res.send('Products parsed.')
+      } catch (error) {
+        res.status(500)
+        res.send()
+        console.log(error)
+      }
+    })
+
     app.post('/login', async (req: Request, res: Response) => {
       const AuthAxios = Axios.create({
         headers: {
@@ -181,10 +199,11 @@ createConnection()
       })
       const baseUrl =
         'https://westeurope.api.cognitive.microsoft.com/face/v1.0/'
-      const personGroupId = 'allon-test'
+      const personGroupId = 'projectd'
 
       const createPerson = async () => {
-        const personName = `Customer ${await userTagRepo.count()}`
+        const personName = `Customer ${await userRepo.count()}`
+        console.log(personName)
         AuthAxios.post<PersonCreateResponse>(
           `${baseUrl}persongroups/${personGroupId}/persons`,
           {
@@ -215,9 +234,12 @@ createConnection()
             ]
             Promise.all(faceCreateRequests)
               .then((_) => {
-                console.log('hallo')
                 AuthAxios.post(`${baseUrl}persongroups/${personGroupId}/train`)
                   .then((_) => {
+                    const newUser = new User()
+                    newUser.userId = personData.data.personId
+                    userRepo.save(newUser)
+
                     res.status(200)
                     res.send({
                       user_id: personData.data.personId,
@@ -254,7 +276,7 @@ createConnection()
               })
           })
           .catch((e) => {
-            console.log(JSON.stringify(e, null, 2))
+            // console.log(e.)
             res.status(500)
             res.send(
               `Something went wrong creating a new account. Please contact the site adminstrator.`
@@ -327,6 +349,7 @@ createConnection()
               ]
               console.log('After ordering: ', JSON.stringify(faces))
               res.status(200)
+
               // TODO: Send recommended products
               const recProducts = await getRecommendations(
                 connection,
@@ -337,7 +360,7 @@ createConnection()
                 recommended_products: recProducts
               })
             } catch (e) {
-              console.log(e)
+              console.log(e.code)
               // if (e.code) {
               //   if (e.code === 409) {
               createPerson()

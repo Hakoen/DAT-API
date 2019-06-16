@@ -23,3 +23,10 @@ export class UserTag {
   @Column()
   public counter: number
 }
+
+// tslint:disable-next-line:max-classes-per-file
+@Entity()
+export class User {
+  @PrimaryColumn()
+  public userId: string
+}
