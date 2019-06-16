@@ -1,5 +1,6 @@
 import Axios, { AxiosResponse } from 'axios'
 import bodyParser from 'body-parser'
+import { config } from 'dotenv'
 import express, { Request, Response } from 'express'
 import * as Path from 'path'
 import 'reflect-metadata'
@@ -11,7 +12,6 @@ import {
   IdentifyResponse,
   PersonCreateResponse
 } from './httpModels'
-import { config } from 'dotenv'
 import { McDonaldsImporter } from './import'
 import { Product, ProductCategory, Tag, UserTag } from './models'
 import { ProductForClient } from './models/productForClient'
@@ -62,6 +62,14 @@ createConnection()
                   userTag.counter += 1
                   userTagRepo.save(userTag)
                 })
+                .catch((_) => {
+                  const newUserTag = userTagRepo.create({
+                    userId: req.body.userId,
+                    tagId: tag.id,
+                    counter: 1
+                  })
+                  userTagRepo.save(newUserTag)
+                })
             } catch {
               const newUserTag = userTagRepo.create({
                 userId: req.body.userId,
@@ -108,7 +116,7 @@ createConnection()
         })
     })
 
-    app.get('/recommendations', async (req: Request, res: Response) => {
+    app.post('/recommendations', async (req: Request, res: Response) => {
       const recProducts = await getRecommendations(connection, req.body.userId)
       res.send({ recommended_products: recProducts })
     })
@@ -175,8 +183,8 @@ createConnection()
         'https://westeurope.api.cognitive.microsoft.com/face/v1.0/'
       const personGroupId = 'allon-test'
 
-      const createPerson = () => {
-        const personName = `Customer ${userTagRepo.count()}`
+      const createPerson = async () => {
+        const personName = `Customer ${await userTagRepo.count()}`
         AuthAxios.post<PersonCreateResponse>(
           `${baseUrl}persongroups/${personGroupId}/persons`,
           {
@@ -187,24 +195,27 @@ createConnection()
           .then((personData) => {
             const faceCreateRequests: Array<Promise<any>> = [
               AuthAxios.post(
-                `${baseUrl}persongroups/${personGroupId}/person/${
+                `${baseUrl}persongroups/${personGroupId}/persons/${
                   personData.data.personId
                 }/persistedFaces`,
                 { url: req.body.main_picture_url }
               ),
               ...req.body.picture_urls.map((url: string) => {
-                return AuthAxios.post(
-                  Path.resolve(
-                    `${baseUrl}persongroups/${personGroupId}/person/${
-                      personData.data.personId
-                    }/persistedFaces`
-                  ),
-                  { url }
-                )
+                setTimeout(() => {
+                  return AuthAxios.post(
+                    Path.resolve(
+                      `${baseUrl}persongroups/${personGroupId}/persons/${
+                        personData.data.personId
+                      }/persistedFaces`
+                    ),
+                    { url }
+                  )
+                }, 3000)
               })
             ]
             Promise.all(faceCreateRequests)
               .then((_) => {
+                console.log('hallo')
                 AuthAxios.post(`${baseUrl}persongroups/${personGroupId}/train`)
                   .then((_) => {
                     res.status(200)
@@ -236,6 +247,10 @@ createConnection()
                 res.send(
                   `Something went wrong adding the faces. Please contact the site adminstrator.`
                 )
+              })
+              .catch((e) => {
+                // console.log(e)
+                console.log(JSON.stringify(e, null, 2))
               })
           })
           .catch((e) => {
@@ -280,6 +295,8 @@ createConnection()
             .map((detectResponse) => detectResponse.faceId)
             .filter((value, index, self) => self.indexOf(value) === index)
 
+          console.log(faceIds)
+
           if (faceIds.length > 0) {
             try {
               const identifyResponse = await AuthAxios.post<IdentifyResponse>(
@@ -320,16 +337,16 @@ createConnection()
                 recommended_products: recProducts
               })
             } catch (e) {
-              console.log(JSON.stringify(e, null, 2))
-              if (e.code) {
-                if (e.code === 409) {
-                  createPerson()
-                }
-              }
-              res.status(500)
-              res.send(
-                `Something went wrong when identifying faces in the photos.`
-              )
+              console.log(e)
+              // if (e.code) {
+              //   if (e.code === 409) {
+              createPerson()
+              // }
+              // }
+              // res.status(500)
+              // res.send(
+              //   `Something went wrong when identifying faces in the photos.`
+              // )
             }
           } else {
             Promise.all(detectRequests)
@@ -363,7 +380,7 @@ createConnection()
                 console.log(JSON.stringify(e, null, 2))
                 res.status(500)
                 res.send(
-                  `Something went wrong when detecting faces in the photos.`
+                  `Something went wrong when detecting faces in the photos. 5`
                 )
               })
           }
@@ -371,7 +388,7 @@ createConnection()
           console.log(JSON.stringify(e, null, 2))
           res.status(500)
           res.send(
-            `Something went wrong when detecting faces in the main photo.`
+            `Something went wrong when detecting faces in the main photo. 5`
           )
         }
       } else {
