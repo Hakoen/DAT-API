@@ -55,6 +55,8 @@ createConnection()
           .leftJoinAndSelect('product.tags', 'tag')
           .getMany()
 
+        console.log(products)
+
         products.forEach((product: Product) => {
           product.tags.forEach((tag) => {
             try {
@@ -146,19 +148,18 @@ createConnection()
       products.forEach((product) => {
         const tagIds: number[] = []
 
-        if (product.tags !== undefined) {
+        if (product.tags !== undefined && product.tags.length > 0) {
           product.tags.forEach((tag) => {
             tagIds.push(tag.id)
           })
+          productsS.push({
+            category: product.productCategory.id,
+            id: product.id,
+            name: product.name,
+            price: product.price,
+            tags: tagIds
+          })
         }
-
-        productsS.push({
-          category: product.productCategory.id,
-          id: product.id,
-          name: product.name,
-          price: product.price,
-          tags: tagIds
-        })
       })
 
       const productsCat: ProductForClient[] = []
