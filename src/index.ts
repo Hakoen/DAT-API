@@ -5,12 +5,15 @@ import express, { Request, Response } from 'express'
 import * as Path from 'path'
 import 'reflect-metadata'
 import { createConnection, Repository } from 'typeorm'
+import { FaceApi } from './api/faceApi'
 import { AllModel } from './client_models/allmodelCm'
 import { compareCandidateObjects, compareFaceObjects } from './helpers'
 import {
   DetectResponse,
+  FaceId,
   IdentifyResponse,
-  PersonCreateResponse
+  PersonCreateResponse,
+  PersonId
 } from './httpModels'
 import { McDonaldsImporter } from './import'
 import { Product, ProductCategory, Tag, UserTag } from './models'
@@ -192,233 +195,54 @@ createConnection()
     })
 
     app.post('/login', async (req: Request, res: Response) => {
-      const AuthAxios = Axios.create({
-        headers: {
-          'Ocp-Apim-Subscription-Key': process.env.FACE_API_KEY,
-          'Content-Type': 'application/json'
-        }
-      })
-      const baseUrl =
-        'https://westeurope.api.cognitive.microsoft.com/face/v1.0/'
-      const personGroupId = 'projectd'
-
-      const createPerson = async () => {
-        const personName = `Customer ${await userRepo.count()}`
-        console.log(personName)
-        AuthAxios.post<PersonCreateResponse>(
-          `${baseUrl}persongroups/${personGroupId}/persons`,
-          {
-            name: personName,
-            userData: personName
-          }
-        )
-          .then((personData) => {
-            const faceCreateRequests: Array<Promise<any>> = [
-              AuthAxios.post(
-                `${baseUrl}persongroups/${personGroupId}/persons/${
-                  personData.data.personId
-                }/persistedFaces`,
-                { url: req.body.main_picture_url }
-              ),
-              ...req.body.picture_urls.map((url: string) => {
-                setTimeout(() => {
-                  return AuthAxios.post(
-                    Path.resolve(
-                      `${baseUrl}persongroups/${personGroupId}/persons/${
-                        personData.data.personId
-                      }/persistedFaces`
-                    ),
-                    { url }
-                  )
-                }, 3000)
-              })
-            ]
-            Promise.all(faceCreateRequests)
-              .then((_) => {
-                AuthAxios.post(`${baseUrl}persongroups/${personGroupId}/train`)
-                  .then((_) => {
-                    const newUser = new User()
-                    newUser.userId = personData.data.personId
-                    userRepo.save(newUser)
-
-                    res.status(200)
-                    res.send({
-                      user_id: personData.data.personId,
-                      recommended_products: []
-                    })
-                  })
-                  .catch((_) => {
-                    res.status(500)
-                    res.send(
-                      `Something went wrong training the person group. Please contact the site adminstrator.`
-                    )
-                  })
-              })
-              .catch((e) => {
-                console.log(JSON.stringify(e, null, 2))
-                AuthAxios.delete(
-                  `${baseUrl}persongroups/${personGroupId}/person/${
-                    personData.data.personId
-                  }`
-                ).catch((_) => {
-                  res.status(500)
-                  res.send(
-                    'Something went wrong while deleting the person when adding the faces went wrong. Please contact the site adminstrator.'
-                  )
-                })
-                res.status(500)
-                res.send(
-                  `Something went wrong adding the faces. Please contact the site adminstrator.`
-                )
-              })
-              .catch((e) => {
-                // console.log(e)
-                console.log(JSON.stringify(e, null, 2))
-              })
-          })
-          .catch((e) => {
-            // console.log(e.)
-            res.status(500)
-            res.send(
-              `Something went wrong creating a new account. Please contact the site adminstrator.`
-            )
-          })
-      }
-
       if (
-        req.body.picture_urls &&
-        req.body.picture_urls.length === 6 &&
-        req.body.main_picture_url
+        !req.body.picture_urls ||
+        req.body.picture_urls.length !== 6 ||
+        !req.body.main_picture_url
       ) {
-        try {
-          AuthAxios.post<DetectResponse>(
-            `${baseUrl}detect?returnFaceId=true&returnFaceLandmarks=false`,
-            { url: req.body.main_picture_url }
-          )
-            .then((_) => {})
-            .catch((e) => {
-              console.log(JSON.stringify(e, null, 2))
-            })
-
-          const detectRequest = AuthAxios.post<DetectResponse>(
-            `${baseUrl}detect?returnFaceId=true&returnFaceLandmarks=false`,
-            { url: req.body.main_picture_url }
-          )
-          const detectRequests: Array<
-            Promise<AxiosResponse<DetectResponse>>
-          > = req.body.picture_urls.map((url: string) => {
-            return AuthAxios.post<DetectResponse>(
-              `${baseUrl}detect?returnFaceId=true&returnFaceLandmarks=false`,
-              { url }
-            )
-          })
-
-          const detectResponses = await detectRequest
-          const faceIds = detectResponses.data
-            .map((detectResponse) => detectResponse.faceId)
-            .filter((value, index, self) => self.indexOf(value) === index)
-
-          console.log(faceIds)
-
-          if (faceIds.length > 0) {
-            try {
-              const identifyResponse = await AuthAxios.post<IdentifyResponse>(
-                `${baseUrl}identify`,
-                {
-                  personGroupId,
-                  faceIds,
-                  maxNumOfCandidatesReturned: 1,
-                  confidenceThreshold: 0.8
-                }
-              )
-              console.log(
-                'Before ordering: ',
-                JSON.stringify(identifyResponse.data)
-              )
-              const faces = [
-                ...identifyResponse.data
-                  .map((face) => {
-                    const candidates = [
-                      ...face.candidates.sort(compareCandidateObjects)
-                    ]
-                    return {
-                      ...face,
-                      candidates
-                    }
-                  })
-                  .sort(compareFaceObjects)
-              ]
-              console.log('After ordering: ', JSON.stringify(faces))
-              res.status(200)
-
-              // TODO: Send recommended products
-              const recProducts = await getRecommendations(
-                connection,
-                faces[0].candidates[0].personId
-              )
-              res.send({
-                user_id: faces[0].candidates[0].personId,
-                recommended_products: recProducts
-              })
-            } catch (e) {
-              console.log(e.code)
-              // if (e.code) {
-              //   if (e.code === 409) {
-              createPerson()
-              // }
-              // }
-              // res.status(500)
-              // res.send(
-              //   `Something went wrong when identifying faces in the photos.`
-              // )
-            }
-          } else {
-            Promise.all(detectRequests)
-              .then((data) => {
-                const secondTryFaceIds = data
-                  .map((requests) =>
-                    requests.data.map((detectResponse) => detectResponse.faceId)
-                  )
-                  .reduce((prev, cur) => [...prev, ...cur])
-                  .filter((value, index, self) => self.indexOf(value) === index)
-                if (secondTryFaceIds.length > 0) {
-                  AuthAxios.post(`${baseUrl}identify`, {
-                    largePersonGroupId: personGroupId,
-                    faceIds: secondTryFaceIds,
-                    maxNumOfCandidatesReturned: 1,
-                    confidenceThreshold: 0.8
-                  })
-                    .then((identityData) => {})
-                    .catch((e) => {
-                      console.log(JSON.stringify(e, null, 2))
-                      res.status(500)
-                      res.send(
-                        `Something went wrong when identifying faces in the photos.`
-                      )
-                    })
-                } else {
-                  createPerson()
-                }
-              })
-              .catch((e) => {
-                console.log(JSON.stringify(e, null, 2))
-                res.status(500)
-                res.send(
-                  `Something went wrong when detecting faces in the photos. 5`
-                )
-              })
-          }
-        } catch (e) {
-          console.log(JSON.stringify(e, null, 2))
-          res.status(500)
-          res.send(
-            `Something went wrong when detecting faces in the main photo. 5`
-          )
-        }
-      } else {
         res.status(400)
         res.send('Wrong request, dude')
+        return
       }
+
+      let mainDetectedFaces: FaceId[]
+
+      try {
+        mainDetectedFaces = await FaceApi.detect(req.body.main_picture_url)
+      } catch (e) {
+        console.log(JSON.stringify(e, null, 2))
+        res.status(500)
+        res.send(`Failed to detect faces. Error: ${e}`)
+        return
+      }
+
+      console.log(mainDetectedFaces)
+
+      if (mainDetectedFaces.length === 0) {
+        res.status(400)
+        res.send('No person detected on picture.')
+        return
+      }
+
+      const identifiedFaces = await FaceApi.identify(mainDetectedFaces)
+      let user: PersonId
+      if (identifiedFaces.length >= 1) {
+        user = identifiedFaces[0].person
+      } else {
+        const userCount = await userRepo.count()
+        user = await FaceApi.createUser(
+          req.body.picture_urls,
+          userCount.toString()
+        )
+      }
+      res.status(200)
+
+      // TODO: Send recommended products
+      const recommendedProducts = await getRecommendations(connection, user)
+      res.send({
+        user_id: user,
+        recommended_products: recommendedProducts
+      })
     })
   })
   .catch((err) => {

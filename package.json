@@ -20,7 +20,8 @@
     "pg": "^7.3.0",
     "reflect-metadata": "^0.1.10",
     "tslint": "^5.16.0",
-    "typeorm": "0.2.17"
+    "typeorm": "0.2.17",
+    "typescript-is": "^0.12.2"
   },
   "devDependencies": {
     "@types/axios": "^0.14.0",

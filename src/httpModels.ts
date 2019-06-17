@@ -3,8 +3,16 @@ interface LoginRequestBody {
   main_picture_url: string
 }
 
+type FaceId = string
+type PersonId = string
+
+interface PersonFaceRecord {
+  person: PersonId
+  face: FaceId
+}
+
 type DetectResponse = Array<{
-  faceId: string
+  faceId: FaceId
   faceRectangle: {
     top: number
     left: number
@@ -16,17 +24,40 @@ type DetectResponse = Array<{
 type IdentifyResponse = FaceObject[]
 
 interface FaceObject {
-  faceId: string
+  faceId: FaceId
   candidates: CandidateObject[]
 }
 
 interface CandidateObject {
-  personId: string
+  personId: PersonId
   confidence: number
 }
 
 interface PersonCreateResponse {
-  personId: string
+  personId: PersonId
 }
 
-export { DetectResponse, IdentifyResponse, PersonCreateResponse, FaceObject, CandidateObject }
+interface PersistedFaceResponse {
+  persistedFaceId: FaceId
+}
+
+interface ErrorResponse {
+  error: {
+    code: string,
+    message: string
+  }
+}
+
+// tslint:disable-next-line: max-line-length
+export {
+  DetectResponse,
+  IdentifyResponse,
+  PersonCreateResponse,
+  FaceObject,
+  CandidateObject,
+  FaceId,
+  PersonId,
+  PersonFaceRecord,
+  PersistedFaceResponse,
+  ErrorResponse
+}
