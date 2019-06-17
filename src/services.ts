@@ -1,11 +1,12 @@
 import express, { Request, Response } from 'express'
 import 'reflect-metadata'
 import { Connection } from 'typeorm'
+import { PersonId } from './httpModels'
 import { Product, Tag, UserTag } from './models'
 
 export const getRecommendations = async (
   connection: Connection,
-  userId: string
+  userId: PersonId
 ): Promise<number[]> => {
   const recTags = await connection
     .getRepository(UserTag)
