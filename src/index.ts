@@ -69,20 +69,18 @@ createConnection()
           .leftJoinAndSelect('product.tags', 'tag')
           .getMany()
 
-        console.log(products)
-
         products.forEach((product: Product) => {
           product.tags.forEach((tag) => {
             try {
               userTagRepo
-                .findOne({ userId: req.body.userId, tagId: tag.id })
+                .findOne({ userId: req.body.user_id, tagId: tag.id })
                 .then((userTag) => {
                   userTag.counter += 1
                   userTagRepo.save(userTag)
                 })
                 .catch((_) => {
                   const newUserTag = userTagRepo.create({
-                    userId: req.body.userId,
+                    userId: req.body.user_id,
                     tagId: tag.id,
                     counter: 1
                   })
@@ -90,7 +88,7 @@ createConnection()
                 })
             } catch {
               const newUserTag = userTagRepo.create({
-                userId: req.body.userId,
+                userId: req.body.user_id,
                 tagId: tag.id,
                 counter: 1
               })
@@ -144,7 +142,7 @@ createConnection()
 
     app.post('/recommendations', async (req: Request, res: Response) => {
       logRequest('recommendations', req)
-      const recProducts = await getRecommendations(connection, req.body.userId)
+      const recProducts = await getRecommendations(connection, req.body.user_id)
       const result = { recommended_products: recProducts }
       res.send(result)
       logResponse(result, res)
