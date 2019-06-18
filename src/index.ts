@@ -194,6 +194,11 @@ createConnection()
       }
     })
 
+    app.post('/identify', async (req: Request, res: Response) => {
+      const personIds = await FaceApi.identify(req.body.faceIds)
+      res.send({ personIds })
+    })
+
     app.post('/login', async (req: Request, res: Response) => {
       if (
         !req.body.picture_urls ||

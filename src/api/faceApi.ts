@@ -1,7 +1,6 @@
 import Axios, { AxiosInstance, AxiosResponse } from 'axios'
 import { config } from 'dotenv'
 import Path from 'path'
-import { is } from 'typescript-is';
 import { compareCandidateObjects } from '../helpers'
 import {
   DetectResponse,
@@ -22,6 +21,7 @@ export class FaceApi {
     pictureUrls: string[],
     name: string
   ): Promise<PersonId> {
+    console.log(`createUser <pictureUrls: ${pictureUrls}, name: ${name}>`)
     const personId = await this.createPersonGroupPerson(name)
 
     const persistedFaces: FaceId[] = []
@@ -44,6 +44,7 @@ export class FaceApi {
   }
 
   public static async detect(url: string): Promise<FaceId[]> {
+    console.log(`detect <url: ${url}>`)
     const response = await this.instance.post<DetectResponse>(
       `${this.baseUrl}detect?returnFaceId=true&returnFaceLandmarks=false`,
       { url }
@@ -55,26 +56,27 @@ export class FaceApi {
   }
 
   public static async identify(faceIds: FaceId[]): Promise<PersonFaceRecord[]> {
-    let response:AxiosResponse<FaceObject[]>;
-
+    let response: AxiosResponse<IdentifyResponse>
+    console.log(`identify <faceIds: ${faceIds}>`)
     try {
-    response = await this.instance.post<IdentifyResponse>(
-      `${this.baseUrl}identify`,
-      {
-        personGroupId: this.personGroupId,
-        faceIds,
-        maxNumOfCandidatesReturned: 1,
-        confidenceThreshold: 0.8
-      }
-    );
+      response = await this.instance.post<IdentifyResponse>(
+        `${this.baseUrl}identify`,
+        {
+          personGroupId: this.personGroupId,
+          faceIds,
+          maxNumOfCandidatesReturned: 1,
+          confidenceThreshold: process.env.FACE_API_THRESHOLD
+        }
+      )
+      console.log('response', response.data)
     } catch (e) {
-      console.log('No people in group yet.');
-      return [];
+      console.log(e.toString())
+      console.log(`Something went wrong: ${e.message}`)
+      return []
     }
 
-    const potentialMatches = response.data;
+    const potentialMatches = response.data
 
-    console.log('2 - MAPPING')
     const result: PersonFaceRecord[] = potentialMatches
       .map<PersonFaceRecord>((record: FaceObject) => {
         if (record.candidates.length === 0) {
@@ -92,7 +94,7 @@ export class FaceApi {
   }
   private static baseUrl: string =
     'https://westeurope.api.cognitive.microsoft.com/face/v1.0/'
-  private static personGroupId: string = 'ezorder-test'
+  private static personGroupId: string = process.env.FACE_API_PERSON_GROUP
 
   private static instance: AxiosInstance = Axios.create({
     headers: {
@@ -104,6 +106,7 @@ export class FaceApi {
   private static async createPersonGroupPerson(
     name: string
   ): Promise<PersonId> {
+    console.log(`createPersonGroupPerson <name: ${name}>`)
     const response = await this.instance.post<PersonCreateResponse>(
       `${this.baseUrl}persongroups/${this.personGroupId}/persons`,
       {
