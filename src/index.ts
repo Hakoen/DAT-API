@@ -61,43 +61,38 @@ createConnection()
       const orderedProducts: number[] = req.body.products
 
       // loop through products, extract tags, find userTag combination: if not present Add one
-      orderedProducts.forEach(async (productString) => {
-        const products = await connection
+      orderedProducts.forEach(async (productString, index: number) => {
+        const product = await connection
           .getRepository(Product)
           .createQueryBuilder('product')
           .where('product.id = :id', { id: productString })
           .leftJoinAndSelect('product.tags', 'tag')
-          .getMany()
+          .getOne()
 
-        console.log(products)
-
-        products.forEach((product: Product) => {
-          product.tags.forEach((tag) => {
-            try {
-              userTagRepo
-                .findOne({ userId: req.body.user_id, tagId: tag.id })
-                .then((userTag) => {
-                  userTag.counter += 1
-                  userTagRepo.save(userTag)
-                })
-                .catch((_) => {
-                  const newUserTag = userTagRepo.create({
-                    userId: req.body.user_id,
-                    tagId: tag.id,
-                    counter: 1
-                  })
-                  userTagRepo.save(newUserTag)
-                })
-            } catch {
-              const newUserTag = userTagRepo.create({
+        for (const tag of product.tags) {
+          try {
+            const newUserTag = new UserTag()
+            newUserTag.userId = req.body.user_id
+            newUserTag.tagId = tag.id
+            newUserTag.counter = 1
+            await connection
+              .createQueryBuilder()
+              .insert()
+              .into(UserTag)
+              .values(newUserTag)
+              .execute()
+          } catch (error) {
+            await connection
+              .createQueryBuilder()
+              .update(UserTag)
+              .where({
                 userId: req.body.user_id,
-                tagId: tag.id,
-                counter: 1
+                tagId: tag.id
               })
-              userTagRepo.save(newUserTag)
-            }
-          })
-        })
+              .set({ counter: () => 'counter + 1' })
+              .execute()
+          }
+        }
       })
       const result = 'Success'
       res.send(result)
