@@ -67,7 +67,6 @@ createConnection()
           .createQueryBuilder('product')
           .where('product.id = :id', { id: productString })
           .leftJoinAndSelect('product.tags', 'tag')
-<<<<<<< HEAD
           .getOne()
 
         for (const tag of product.tags) {
@@ -87,29 +86,6 @@ createConnection()
               .createQueryBuilder()
               .update(UserTag)
               .where({
-=======
-          .getMany()
-
-        products.forEach((product: Product) => {
-          product.tags.forEach((tag) => {
-            try {
-              userTagRepo
-                .findOne({ userId: req.body.user_id, tagId: tag.id })
-                .then((userTag) => {
-                  userTag.counter += 1
-                  userTagRepo.save(userTag)
-                })
-                .catch((_) => {
-                  const newUserTag = userTagRepo.create({
-                    userId: req.body.user_id,
-                    tagId: tag.id,
-                    counter: 1
-                  })
-                  userTagRepo.save(newUserTag)
-                })
-            } catch {
-              const newUserTag = userTagRepo.create({
->>>>>>> 07b4659049ccb2331b052db81a3e6177a0d548fb
                 userId: req.body.user_id,
                 tagId: tag.id
               })
