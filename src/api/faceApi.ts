@@ -13,6 +13,7 @@ import {
   PersonFaceRecord,
   PersonId
 } from '../httpModels'
+import { logFunctionCall, logResult, logError } from '../logging'
 
 config({ path: Path.resolve(__dirname, '..', '..', '.env') })
 
@@ -21,7 +22,8 @@ export class FaceApi {
     pictureUrls: string[],
     name: string
   ): Promise<PersonId> {
-    console.log(`createUser <pictureUrls: ${pictureUrls}, name: ${name}>`)
+    logFunctionCall('FaceApi.createUser', { pictureUrls, name })
+
     const personId = await this.createPersonGroupPerson(name)
 
     const persistedFaces: FaceId[] = []
@@ -40,24 +42,30 @@ export class FaceApi {
       `${this.baseUrl}persongroups/${this.personGroupId}/train`
     )
 
+    logResult(personId)
     return personId
   }
 
   public static async detect(url: string): Promise<FaceId[]> {
-    console.log(`detect <url: ${url}>`)
+    logFunctionCall('FaceApi.detect', { url })
+
     const response = await this.instance.post<DetectResponse>(
       `${this.baseUrl}detect?returnFaceId=true&returnFaceLandmarks=false`,
       { url }
     )
 
-    return response.data
+    const result = response.data
       .map((obj) => obj.faceId)
       .filter((value, index, self) => self.indexOf(value) === index)
+
+    logResult(result)
+    return result
   }
 
   public static async identify(faceIds: FaceId[]): Promise<PersonFaceRecord[]> {
+    logFunctionCall('FaceApi.identify', { faceIds })
+
     let response: AxiosResponse<IdentifyResponse>
-    console.log(`identify <faceIds: ${faceIds}>`)
     try {
       response = await this.instance.post<IdentifyResponse>(
         `${this.baseUrl}identify`,
@@ -68,11 +76,11 @@ export class FaceApi {
           confidenceThreshold: process.env.FACE_API_THRESHOLD
         }
       )
-      console.log('response', response.data)
     } catch (e) {
-      console.log(e.toString())
-      console.log(`Something went wrong: ${e.message}`)
-      return []
+      logError(e)
+      const result: PersonFaceRecord[] = []
+      logResult(result)
+      return result
     }
 
     const potentialMatches = response.data
@@ -90,8 +98,10 @@ export class FaceApi {
       })
       .filter((record: PersonFaceRecord) => record.face !== null)
 
+    logResult(result)
     return result
   }
+
   private static baseUrl: string =
     'https://westeurope.api.cognitive.microsoft.com/face/v1.0/'
   private static personGroupId: string = process.env.FACE_API_PERSON_GROUP
@@ -106,7 +116,7 @@ export class FaceApi {
   private static async createPersonGroupPerson(
     name: string
   ): Promise<PersonId> {
-    console.log(`createPersonGroupPerson <name: ${name}>`)
+    logFunctionCall('FaceApi.createPersonGroupPerson', { name })
     const response = await this.instance.post<PersonCreateResponse>(
       `${this.baseUrl}persongroups/${this.personGroupId}/persons`,
       {
@@ -114,6 +124,8 @@ export class FaceApi {
       }
     )
 
-    return response.data.personId
+    const result = response.data.personId
+    logResult(result)
+    return result
   }
 }

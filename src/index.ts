@@ -1,5 +1,6 @@
 import Axios, { AxiosResponse } from 'axios'
 import bodyParser from 'body-parser'
+import 'colors'
 import { config } from 'dotenv'
 import express, { Request, Response } from 'express'
 import * as Path from 'path'
@@ -16,6 +17,7 @@ import {
   PersonId
 } from './httpModels'
 import { McDonaldsImporter } from './import'
+import { logConfig, logRequest, logResponse, logError } from './logging'
 import { Product, ProductCategory, Tag, UserTag } from './models'
 import { ProductForClient } from './models/productForClient'
 import { User } from './models/userDbm'
@@ -43,10 +45,12 @@ createConnection()
     // app.use(cors())
 
     app.listen(port, () => {
-      console.log(`server is running on: http://localhost:${port}`)
+      logConfig(`Server is running on: http://localhost:${port}`)
     })
 
     app.post('/place_order', async (req: Request, res: Response) => {
+      logRequest('place_order', req)
+
       const orderedProducts: number[] = req.body.products
 
       // loop through products, extract tags, find userTag combination: if not present Add one
@@ -88,10 +92,13 @@ createConnection()
           })
         })
       })
-      res.send('Success')
+      const result = 'Success'
+      res.send(result)
+      logResponse(result, res)
     })
 
     app.post('/tag', (req: Request, res: Response) => {
+      logRequest('tag', req)
       const newTag = tagRepo.create({
         name: req.body.name,
         color: req.body.color
@@ -101,14 +108,17 @@ createConnection()
         .save(newTag)
         .then(() => {
           res.sendStatus(201)
+          logResponse(null, res)
         })
         .catch((err) => {
-          console.log(err)
+          logError(err)
           res.sendStatus(501)
+          logResponse(null, res)
         })
     })
 
     app.delete('/tag', (req: Request, res: Response) => {
+      logRequest('tag (DELETE)', req)
       tagRepo
         .findOne({ name: req.body.name })
         .then((deleteTag) => {
@@ -116,19 +126,25 @@ createConnection()
         })
         .then(() => {
           res.sendStatus(200)
+          logResponse(null, res)
         })
         .catch((err) => {
-          console.log(err)
+          logError(err)
           res.sendStatus(500)
+          logResponse(null, res)
         })
     })
 
     app.post('/recommendations', async (req: Request, res: Response) => {
+      logRequest('recommendations', req)
       const recProducts = await getRecommendations(connection, req.body.userId)
-      res.send({ recommended_products: recProducts })
+      const result = { recommended_products: recProducts }
+      res.send(result)
+      logResponse(result, res)
     })
 
     app.get('/products', async (req: Request, res: Response) => {
+      logRequest('products', req)
       const products = await connection
         .getRepository(Product)
         .createQueryBuilder('product')
@@ -174,32 +190,42 @@ createConnection()
         productsCat.push(...productsByCat.slice(0, 10))
       })
 
-      res.send(AllModel.toAllModel(category, productsCat, tags))
-      // res.send(productsByCat)
+      const result = AllModel.toAllModel(category, productsCat, tags)
+      res.send(result)
+      logResponse(result, res)
     })
 
     app.post('/parse', async (req, res) => {
+      logRequest('parse', req)
       try {
         const imp = new McDonaldsImporter('./src/data/mcdonalds-products.csv')
         await imp.import(
           connection.getRepository(ProductCategory),
           connection.getRepository(Product)
         )
+        const result = 'Products parsed.'
         res.status(201)
-        res.send('Products parsed.')
+        res.send(result)
+        logResponse(result, res)
       } catch (error) {
+        logError(error)
         res.status(500)
         res.send()
-        console.log(error)
+        logResponse(null, res)
       }
     })
 
     app.post('/identify', async (req: Request, res: Response) => {
-      const personIds = await FaceApi.identify(req.body.faceIds)
-      res.send({ personIds })
+      logRequest('identify', req)
+      const detectedFaces = await FaceApi.detect(req.body.url)
+      const personIds = await FaceApi.identify(detectedFaces)
+      const result = { personIds }
+      res.send(result)
+      logResponse(result, res)
     })
 
     app.post('/login', async (req: Request, res: Response) => {
+      logRequest('login', req)
       if (
         !req.body.picture_urls ||
         req.body.picture_urls.length !== 6 ||
@@ -215,17 +241,19 @@ createConnection()
       try {
         mainDetectedFaces = await FaceApi.detect(req.body.main_picture_url)
       } catch (e) {
-        console.log(JSON.stringify(e, null, 2))
+        logError(JSON.stringify(e, null, 2))
+        const result = `Failed to detect faces. Error: ${e}`
         res.status(500)
-        res.send(`Failed to detect faces. Error: ${e}`)
+        res.send(result)
+        logResponse(result, res)
         return
       }
 
-      console.log(mainDetectedFaces)
-
       if (mainDetectedFaces.length === 0) {
+        const result = 'No person detected in picture.'
         res.status(400)
-        res.send('No person detected on picture.')
+        res.send(result)
+        logResponse(result, res)
         return
       }
 
@@ -244,12 +272,16 @@ createConnection()
 
       // TODO: Send recommended products
       const recommendedProducts = await getRecommendations(connection, user)
-      res.send({
+
+      const result = {
         user_id: user,
         recommended_products: recommendedProducts
-      })
+      }
+
+      res.send(result)
+      logResponse(result, res)
     })
   })
   .catch((err) => {
-    console.log('ERROR: ', err)
+    logError(err)
   })
