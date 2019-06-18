@@ -96,7 +96,7 @@ export class FaceApi {
           person: record.candidates.sort(compareCandidateObjects)[0].personId
         }
       })
-      .filter((record: PersonFaceRecord) => record.face !== null)
+      .filter((record: PersonFaceRecord) => record.person !== null)
 
     logResult(result)
     return result
