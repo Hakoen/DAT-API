@@ -17,7 +17,7 @@ import {
   PersonId
 } from './httpModels'
 import { McDonaldsImporter } from './import'
-import { logConfig, logRequest, logResponse, logError } from './logging'
+import { logConfig, logError, logRequest, logResponse } from './logging'
 import { Product, ProductCategory, Tag, UserTag } from './models'
 import { ProductForClient } from './models/productForClient'
 import { User } from './models/userDbm'
@@ -46,6 +46,13 @@ createConnection()
 
     app.listen(port, () => {
       logConfig(`Server is running on: http://localhost:${port}`)
+    })
+
+    app.get('/', async (req: Request, res: Response) => {
+      logRequest('', req)
+      res.sendStatus(200)
+      res.send();
+      logResponse(null, res)
     })
 
     app.post('/place_order', async (req: Request, res: Response) => {

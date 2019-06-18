@@ -16,7 +16,7 @@ export const logConfig = (message: string) => {
 export const logRequest = (name: string, request: Request) => {
   return log(
     'REQUEST',
-    `/${name} <body: ${JSON.stringify(request.body)}>`.white.bgBlack
+    `/${name} <ip: ${request.ip}, body: ${JSON.stringify(request.body)}>`.white.bgBlack
   )
 }
 export const logFunctionCall = (functionName: string, args: object) => {
