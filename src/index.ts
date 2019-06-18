@@ -51,7 +51,7 @@ createConnection()
     app.get('/', async (req: Request, res: Response) => {
       logRequest('', req)
       res.sendStatus(200)
-      res.send();
+      res.send()
       logResponse(null, res)
     })
 
@@ -272,6 +272,9 @@ createConnection()
           req.body.picture_urls,
           userCount.toString()
         )
+        const newUser = new User()
+        newUser.userId = user
+        userRepo.save(newUser)
       }
       res.status(200)
 
